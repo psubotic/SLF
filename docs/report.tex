@@ -1,0 +1,115 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{palatino}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{mdframed}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\definecolor{accent}{RGB}{30, 100, 60}
+\definecolor{darkgreen}{RGB}{30, 100, 60}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{midgray}{RGB}{130, 130, 130}
+\definecolor{linkblue}{RGB}{20, 80, 160}
+\definecolor{arrowgray}{RGB}{90, 90, 90}
+\definecolor{colfield}{RGB}{215, 235, 255}
+\definecolor{colingest}{RGB}{255, 243, 215}
+\definecolor{colworker}{RGB}{220, 245, 230}
+\definecolor{coldash}{RGB}{248, 230, 248}
+\definecolor{colstore}{RGB}{255, 248, 215}
+\definecolor{colretrain}{RGB}{255, 228, 228}
+\definecolor{colreview}{RGB}{230, 230, 255}
+
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=linkblue,citecolor=accent,
+  pdftitle={SLF Technical Report}}
+
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection.}{0.6em}{}
+  [\vspace{-4pt}\rule{\linewidth}{0.6pt}\vspace{2pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{darkgreen}}{\thesubsection}{0.5em}{}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\textcolor{midgray}{SLF Trap Detector (PoC) --- Technical Report}}
+\fancyhead[R]{\small\textcolor{midgray}{Pavle Subotic}}
+\fancyfoot[C]{\small\textcolor{midgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{%
+  \color{midgray}\leaders\hrule height \headrulewidth\hfill}}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{\small\color{darkgreen}#1}}
+
+\newmdenv[backgroundcolor=lightgray,linecolor=accent,linewidth=2pt,
+  leftline=true,rightline=false,topline=false,bottomline=false,
+  innerleftmargin=10pt,innerrightmargin=10pt,
+  innertopmargin=6pt,innerbottommargin=6pt,
+  skipabove=8pt,skipbelow=8pt]{callout}
+
+% ── TikZ styles ───────────────────────────────────────────────────────────────
+\tikzset{
+  sbox/.style 2 args={rectangle, rounded corners=4pt,
+    draw=#1!70!black, fill=#1, text width=#2,
+    minimum height=1.0cm, align=center, font=\small},
+  sboxn/.style={rectangle, rounded corners=4pt,
+    draw=midgray!70, fill=lightgray, text width=3.6cm,
+    minimum height=0.85cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=5pt,width=4pt]}, thick, color=arrowgray},
+  darr/.style={-{Stealth[length=5pt,width=4pt]}, thick, dashed, color=midgray},
+  lbl/.style={font=\scriptsize\itshape, color=midgray, align=center},
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Title ─────────────────────────────────────────────────────────────────────
+\begin{center}
+{\LARGE\bfseries\color{accent}Technical Report:\\[4pt]
+Spotted Lanternfly Detection\\[2pt]in Pheromone Trap Images}\\[14pt]
+{\normalsize\textbf{Project:} SLF Trap Detector\quad
+\textbf{Date:} March 2025\quad
+\textbf{Author:} Pavle Suboti\'{c}\quad
+\textbf{Version:} 3}\\[5pt]
+\rule{\linewidth}{1pt}
+\end{center}
+
+\begin{callout}
+\textbf{Abstract.}
+We describe a proof-of-concept ML pipeline for detecting and counting adult
+    \textit{Lycorma delicatula} a.k.a Spotted Lanternfly(SLF) in pheromone sticky trap
+photographs. The challenge is to propose a model that has reasonable accuracy 
+    with no labeled training dataset, and deployment on a CPU (no GPU). These restrictions 
+    prevent the use of common state-of-the-art 
+    techniques. We therefore utilize classical image processing
+techniques. We combined a HOG\,+\,LBP\,+\,Random Forest classifier trained from synthetic
+ground truth and achieves 85\,\% precision\,/\,77\,\% recall\,/\,81\,\% F1 with no
+GPU and no manually labeled images. We conclude by a tentative design for a production
+deployment architecture that incorporates a feedback loop that uses uncertain in-production
+detections to continuously grow the training dataset with minimal expert effort.
+\end{callout}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Problem Definition}
+
+\subsection{Scope}
+Detect and count adult \textit{Lycorma delicatula} in pheromone sticky trap
+photographs. Framed as \textbf{object detection} (bounding boxes + confidence
+scores) with a per-image count as the primary operational output. Instance
+segmentation was considered and rejected as unnecessary at this stage; bounding
+boxes are sufficient for counting and annotation bootstrapping.
+
+\end{document}
