@@ -33,32 +33,23 @@ jobs:
         PYTHONPATH=. python -m pytest tests/ -v --tb=short \
           --cov=src \
           --cov-report=term-missing \
-          --cov-report=json
+          --cov-report=xml
       env:
         PYTHONPATH: ${{ github.workspace }}
 
-    - name: Coverage Badge
-      uses: tj-actions/coverage-badge-py@v2
-      with:
-        output: coverage.svg
-
-    - name: Verify Changed files
-      uses: tj-actions/verify-changed-files@v16
-      id: verify-changed-files
-      with:
-        files: coverage.svg
-
-    - name: Commit files
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
+    - name: Get Coverage Percentage
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add coverage.svg
-        git commit -m "Updated coverage.svg"
+        coverage report --format=total > coverage_total.txt
+        COVERAGE=$(cat coverage_total.txt)
+        echo "Coverage: $COVERAGE%"
+        echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
 
-    - name: Push changes
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
-      uses: ad-m/github-push-action@master
+    - name: Create Coverage Badge
+      uses: schneegans/dynamic-badges-action@v1.7.0
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+        auth: ${{ secrets.GITHUB_TOKEN }}
+        gistID: YOUR_GIST_ID_HERE
+        filename: slf-coverage.json
+        label: coverage
+        message: ${{ env.COVERAGE }}%
+        color: brightgreen
