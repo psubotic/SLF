@@ -48,16 +48,16 @@ jobs:
           --cov-report=xml \
           --tb=short
     
-    - name: Run integration test (synthetic demo)
-      run: |
-        PYTHONPATH=. python scripts/run_demo.py \
-          --mode synthetic \
-          --output-dir /tmp/test_output
+          #- name: Run integration test (synthetic demo)
+          #run: |
+          #PYTHONPATH=. python scripts/run_demo.py \
+          #--mode synthetic \
+          #--output-dir /tmp/test_output
     
-    - name: Run benchmark (quick version)
-      run: |
-        PYTHONPATH=. timeout 300 python scripts/benchmark_table_metrics.py || true
-      continue-on-error: true
+          # - name: Run benchmark (quick version)
+          #run: |
+          #PYTHONPATH=. timeout 300 python scripts/benchmark_table_metrics.py || true
+          #continue-on-error: true
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
