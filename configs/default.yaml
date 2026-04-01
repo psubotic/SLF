@@ -1,0 +1,94 @@
+# SLF Trap Detector — Default Configuration
+# All pipeline parameters in one place for reproducibility.
+# Last updated: classifier changed from CLIP to HOG+LBP+RF (v2).
+
+preprocessing:
+  target_size: [1024, 1024]       # Resize images to this before processing
+  clahe_clip_limit: 2.0           # CLAHE contrast enhancement clip limit
+  clahe_tile_grid: [8, 8]         # CLAHE tile grid size
+  glare_percentile: 97            # Pixels above this luminance percentile are flagged as glare
+  glare_inpaint_radius: 7         # Inpainting radius for glare removal
+
+region_proposal:
+  method: "mser+contour"          # mser | contour | mser+contour
+  min_area_px: 300                # Minimum region area in pixels (post-resize)
+  max_area_px: 18000              # Maximum region area in pixels
+  mser_delta: 5                   # MSER delta parameter
+  mser_min_area: 200
+  mser_max_area: 14400
+  mser_max_variation: 0.25
+  contour_canny_low: 30
+  contour_canny_high: 100
+  nms_iou_threshold: 0.35         # Tightened from 0.4 to reduce duplicate proposals
+
+feature_filter:
+  # SLF adults: red-brown/grey forewings, red hindwings with black spots
+  # HSV hue range (0-180 in OpenCV): red-brown is roughly 0-22 and 155-180
+  slf_hue_range_lower: [0, 60, 40]
+  slf_hue_range_upper: [25, 255, 255]
+  slf_hue_range_lower2: [155, 60, 40]
+  slf_hue_range_upper2: [180, 255, 255]
+  min_color_fraction: 0.08        # Raised from 0.06 — filters more plain debris
+  min_aspect_ratio: 1.2           # Raised from 1.1 — SLF adults are wider than tall
+  max_aspect_ratio: 5.0
+  min_solidity: 0.3
+  max_solidity: 0.98
+  min_score: 0.18                 # Raised from 0.12 — tighter pre-filter
+
+classifier:
+  # Primary classifier: HOG + LBP + HSV + shape → Random Forest
+  # No GPU or internet required. Trains from synthetic GT on first run.
+  # CLIP-based classifier (classifier.py) remains available when GPU is present.
+  mode: "random_forest"           # random_forest | one_class_svm
+
+  # Score threshold — controls precision/recall trade-off:
+  #   0.50: higher recall  (~62% precision, ~96% recall) — good for labeling assist
+  #   0.65: balanced       (~71% precision, ~90% recall) — default
+  #   0.70: high precision (~79% precision, ~88% recall) — autonomous reporting
+  threshold: 0.65
+
+  # Feature extraction
+  patch_size: [64, 128]           # (W, H) — HOG standard window
+  hog_orientations: 9
+  hog_pixels_per_cell: [8, 8]
+  hog_cells_per_block: [2, 2]
+  lbp_radius: 3
+  lbp_n_points: 24                # 8 * radius
+  lbp_n_bins: 26                  # n_points + 2
+  hsv_h_bins: 18
+  hsv_s_bins: 8
+  hsv_v_bins: 8
+
+  # One-Class SVM (fallback cold-start — no negatives needed at all)
+  ocsvm_nu: 0.15
+  ocsvm_kernel: "rbf"
+  ocsvm_gamma: "scale"
+
+  # Random Forest
+  rf_n_estimators: 200
+  rf_max_depth: 12
+  rf_class_weight: "balanced"
+
+  # Auto-training from synthetic data
+  auto_train_n_synthetic: 400     # Synthetic patches generated for cold-start training
+  model_cache_path: "outputs/models/descriptor_rf.pkl"
+
+
+synthetic_generation:
+  num_images: 200                 # Number of synthetic trap images to generate
+  insects_per_image_range: [1, 8] # Random count of SLF per synthetic image
+  background_blur_range: [0, 2]   # Gaussian blur on background
+  slf_scale_range: [0.03, 0.12]   # SLF size as fraction of image width
+  rotation_range: [-180, 180]
+  brightness_jitter: 0.3
+  noise_level: 0.02
+  occlusion_probability: 0.25
+  debris_probability: 0.4
+
+output:
+  save_annotated_image: true
+  save_json: true
+  bbox_color: [0, 220, 80]        # BGR — green for detections
+  gt_bbox_color: [0, 120, 255]    # BGR — orange for ground truth overlays
+  bbox_thickness: 2
+  font_scale: 0.5
