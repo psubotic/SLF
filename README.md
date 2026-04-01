@@ -7,6 +7,24 @@
 
 
 A PoC for detecting and counting adult Lycorma delicatula a.k.a Spotted Lanternfly(SLF) in pheromone sticky trap photographs. The challenge of this project was to find a model/pipeline that has reasonable accuracy with: 
-1. no labeled training dataset,
-2. deployment on a CPU (no GPU).
+1. No labeled training dataset,
+2. Deployment on a CPU (no GPU).
+
+## Quick Start
+```bash
+git clone https://github.com/psubotic/SLF.git
+cd SLF
+pip install -r requirements.txt
+
+# Run demo with synthetic data
+python scripts/run_demo.py --mode synthetic
+```
+
+## Approach
+Four-stage classical computer vision pipeline:
+1. **Preprocessing** - CLAHE contrast enhancement, glare removal
+2. **Region Proposal** - MSER + Canny contours with NMS
+3. **Heuristic Filter** - Color, aspect ratio, and solidity rules
+4. **Descriptor Classifier** - HOG+LBP features + Random Forest
+
 
