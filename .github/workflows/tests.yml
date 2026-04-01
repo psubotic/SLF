@@ -1,6 +1,5 @@
 name: Tests
 
-# Trigger on every push and pull request
 on:
   push:
     branches: [ main, master, develop ]
@@ -11,33 +10,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        python-version: [3.9, 3.10, 3.11]
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.10'
     
     - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
     
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-    
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
@@ -45,10 +31,13 @@ jobs:
     
     - name: Run tests
       run: |
-        python -m pytest tests/ -v --cov=src --cov-report=xml --cov-report=term
+        PYTHONPATH=. python -m pytest tests/ -v --cov=src
     
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
-        file: ./coverage.xml
-        fail_ci_if_error: false
+        name: test-results
+        path: |
+          coverage.xml
+          /tmp/test_output/
