@@ -1,9 +1,3 @@
-"""
-test_preprocessor.py
-────────────────────
-Unit tests for TrapImagePreprocessor. Uses only numpy/OpenCV (no ML).
-"""
-
 import numpy as np
 import pytest
 
@@ -12,7 +6,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
-
 
 @pytest.fixture
 def preprocessor():

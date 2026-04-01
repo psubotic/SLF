@@ -1,4 +1,3 @@
-"""SLF Trap Detector — detection subpackage."""
 from .preprocessor import TrapImagePreprocessor, PreprocessorConfig
 from .region_proposer import RegionProposer, RegionProposerConfig
 from .feature_filter import FeatureFilter, FeatureFilterConfig

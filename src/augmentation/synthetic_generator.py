@@ -1,26 +1,3 @@
-"""
-synthetic_generator.py
-──────────────────────
-Generate synthetic pheromone trap images for training / POC demonstration.
-
-Strategy: "Cut-and-paste" synthesis
-  1. Generate or load a trap-board background (yellow/brown sticky board texture).
-  2. Procedurally render SLF-like insect shapes (or paste real reference cutouts).
-  3. Apply per-insect augmentation: scale, rotation, blur, brightness, partial occlusion.
-  4. Add realistic noise: debris patches, glue artifacts, lighting gradients.
-
-This produces plausible training images WITHOUT any real labeled trap data.
-
-The output format is compatible with COCO-style annotation (bboxes are exported
-alongside each synthetic image).
-
-Usage
------
-    gen = SyntheticTrapGenerator(seed=42)
-    images, annotations = gen.generate_batch(n=50)
-    gen.save_batch(images, annotations, output_dir="data/synthetic/")
-"""
-
 from __future__ import annotations
 
 import json
@@ -40,7 +17,7 @@ logger = logging.getLogger(__name__)
 class SyntheticConfig:
     image_size: Tuple[int, int] = (1024, 1024)
     insects_per_image_range: Tuple[int, int] = (1, 8)
-    slf_scale_range: Tuple[float, float] = (0.03, 0.12)   # As fraction of image width
+    slf_scale_range: Tuple[float, float] = (0.03, 0.12)
     rotation_range: Tuple[float, float] = (-180.0, 180.0)
     brightness_jitter: float = 0.3
     noise_std: float = 5.0
@@ -51,17 +28,6 @@ class SyntheticConfig:
 
 
 class SyntheticTrapGenerator:
-    """
-    Generates synthetic sticky trap images with procedurally rendered SLF
-    specimens and realistic noise/debris.
-
-    Parameters
-    ----------
-    config : SyntheticConfig
-    slf_reference_dir : Optional directory containing reference SLF cutout PNGs.
-                        If None, uses procedurally drawn shapes.
-    """
-
     def __init__(
         self,
         config: SyntheticConfig | None = None,
@@ -75,10 +41,6 @@ class SyntheticTrapGenerator:
         if self.cfg.seed is not None:
             random.seed(self.cfg.seed)
             np.random.seed(self.cfg.seed)
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
 
     def generate_batch(
         self, n: int
@@ -271,16 +233,7 @@ class SyntheticTrapGenerator:
         return background, bbox
 
     def _draw_procedural_slf(self) -> np.ndarray:
-        """
-        Draw a simplified but plausible SLF adult shape with RGBA channels.
-
-        Visual reference:
-          - Body: elongated ellipse, dark grey/brown
-          - Forewings: wider rounded rectangle, mottled grey-brown with black dots
-          - Hindwings: not visible at rest (folded under forewings)
-          - Red/orange spots at wing tips (variable)
-        """
-        W, H = 120, 60   # Approximate pixel dimensions before scaling
+        W, H = 120, 60   # Approximate pixel
         img = np.zeros((H, W, 4), dtype=np.uint8)  # BGRA
 
         # --- Forewing (dominant visible surface) ---
@@ -324,10 +277,6 @@ class SyntheticTrapGenerator:
 
         return img
 
-    # ------------------------------------------------------------------
-    # Internal: compositing helpers
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _rotate_with_alpha(img_bgra: np.ndarray, angle: float) -> np.ndarray:
         """Rotate BGRA image, keeping alpha intact."""
@@ -354,7 +303,6 @@ class SyntheticTrapGenerator:
         H, W = bg.shape[:2]
         ih, iw = insect_bgra.shape[:2]
 
-        # Clip to canvas
         sx, sy = max(0, -x), max(0, -y)
         ex, ey = min(iw, W - x), min(ih, H - y)
         dx, dy = max(0, x), max(0, y)
@@ -384,10 +332,6 @@ class SyntheticTrapGenerator:
         occ_h = random.randint(h // 4, h // 2)
         mask[occ_y: occ_y + occ_h, occ_x: occ_x + occ_w] = 0
         return mask
-
-    # ------------------------------------------------------------------
-    # Internal: noise / debris
-    # ------------------------------------------------------------------
 
     def _add_debris(self, bg: np.ndarray) -> np.ndarray:
         H, W = bg.shape[:2]
@@ -448,10 +392,6 @@ class SyntheticTrapGenerator:
 
         result = np.clip(img.astype(np.float32) * gradient, 0, 255).astype(np.uint8)
         return result
-
-    # ------------------------------------------------------------------
-    # Internal: load reference cutouts
-    # ------------------------------------------------------------------
 
     def _load_references(self, ref_dir: Path) -> None:
         ref_dir = Path(ref_dir)
