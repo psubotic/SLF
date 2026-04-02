@@ -28,10 +28,42 @@ jobs:
         python -m pip install --upgrade pip
         pip install opencv-python-headless numpy scipy scikit-learn pytest pytest-cov
 
-    - name: Run tests with coverage
+    - name: Create required directories
+      run: |
+        mkdir -p outputs/models
+        mkdir -p data/synthetic
+        mkdir -p outputs/demo
+
+    - name: Run unit tests with coverage
       run: |
         PYTHONPATH=. python -m pytest tests/ -v --tb=short \
           --cov=src \
           --cov-report=term-missing
       env:
         PYTHONPATH: ${{ github.workspace }}
+
+    - name: Run integration demo (synthetic)
+      run: |
+        PYTHONPATH=. timeout 300 python scripts/run_demo.py \
+          --mode synthetic \
+          --output-dir outputs/demo/ci_test
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+      continue-on-error: true
+
+    - name: Verify demo output
+      run: |
+        echo "Checking demo output files..."
+        ls -la outputs/demo/ci_test/
+        test -f outputs/demo/ci_test/result_synthetic.jpg
+        test -f outputs/demo/ci_test/result_synthetic.json
+        echo "✓ Demo completed successfully"
+
+    - name: Upload demo artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: demo-output-${{ github.run_number }}
+        path: |
+          outputs/demo/ci_test/
+        retention-days: 7
