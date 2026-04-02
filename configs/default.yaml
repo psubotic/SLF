@@ -1,6 +1,3 @@
-# SLF Trap Detector — Default Configuration
-# All pipeline parameters in one place for reproducibility.
-# Last updated: classifier changed from CLIP to HOG+LBP+RF (v2).
 
 preprocessing:
   target_size: [1024, 1024]       # Resize images to this before processing
@@ -36,15 +33,8 @@ feature_filter:
   min_score: 0.18                 # Raised from 0.12 — tighter pre-filter
 
 classifier:
-  # Primary classifier: HOG + LBP + HSV + shape → Random Forest
-  # No GPU or internet required. Trains from synthetic GT on first run.
-  # CLIP-based classifier (classifier.py) remains available when GPU is present.
   mode: "random_forest"           # random_forest | one_class_svm
 
-  # Score threshold — controls precision/recall trade-off:
-  #   0.50: higher recall  (~62% precision, ~96% recall) — good for labeling assist
-  #   0.65: balanced       (~71% precision, ~90% recall) — default
-  #   0.70: high precision (~79% precision, ~88% recall) — autonomous reporting
   threshold: 0.65
 
   # Feature extraction
