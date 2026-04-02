@@ -17,11 +17,19 @@ cd SLF
 pip install -r requirements.txt
 ```
 
-## Approach
+## Our Approach
 Four-stage classical computer vision pipeline:
 1. **Preprocessing** - CLAHE contrast enhancement, glare removal
 2. **Region Proposal** - MSER + Canny contours with NMS
 3. **Heuristic Filter** - Color, aspect ratio, and solidity rules
 4. **Descriptor Classifier** - HOG+LBP features + Random Forest
+
+
+## Performance
+| Metric | Heuristic-only | **Our Approach** |
+|--------|----------------|-----------------|
+| Precision | 41% | **80%** |
+| Recall | 91% | **83%** |
+| F1 | 56% | **81%** |
 
 
