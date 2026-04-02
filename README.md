@@ -15,6 +15,9 @@ A PoC for detecting and counting adult Lycorma delicatula a.k.a Spotted Lanternf
 git clone https://github.com/psubotic/SLF.git
 cd SLF
 pip install -r requirements.txt
+
+# Run demo with synthetic data
+python scripts/run_demo.py --mode synthetic
 ```
 
 ## Our Approach
