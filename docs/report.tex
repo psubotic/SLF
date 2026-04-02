@@ -1,0 +1,812 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{palatino}
+\usepackage{microtype}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{mdframed}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc, arrows, shapes}
+\usepackage{amsthm}
+
+
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\definecolor{accent}{RGB}{30, 100, 60}
+\definecolor{darkgreen}{RGB}{30, 100, 60}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{midgray}{RGB}{130, 130, 130}
+\definecolor{linkblue}{RGB}{20, 80, 160}
+\definecolor{arrowgray}{RGB}{90, 90, 90}
+\definecolor{colfield}{RGB}{215, 235, 255}
+\definecolor{colingest}{RGB}{255, 243, 215}
+\definecolor{colworker}{RGB}{220, 245, 230}
+\definecolor{coldash}{RGB}{248, 230, 248}
+\definecolor{colstore}{RGB}{255, 248, 215}
+\definecolor{colretrain}{RGB}{255, 228, 228}
+\definecolor{colreview}{RGB}{230, 230, 255}
+
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=linkblue,citecolor=accent,
+  pdftitle={SLF Technical Report}}
+
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection.}{0.6em}{}
+  [\vspace{-4pt}\rule{\linewidth}{0.6pt}\vspace{2pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{darkgreen}}{\thesubsection}{0.5em}{}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\textcolor{midgray}{SLF Trap Detector (PoC) --- Technical Report}}
+\fancyhead[R]{\small\textcolor{midgray}{Pavle Subotic}}
+\fancyfoot[C]{\small\textcolor{midgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{%
+  \color{midgray}\leaders\hrule height \headrulewidth\hfill}}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{\small\color{darkgreen}#1}}
+
+\newmdenv[backgroundcolor=lightgray,linecolor=accent,linewidth=2pt,
+  leftline=true,rightline=false,topline=false,bottomline=false,
+  innerleftmargin=10pt,innerrightmargin=10pt,
+  innertopmargin=6pt,innerbottommargin=6pt,
+  skipabove=8pt,skipbelow=8pt]{callout}
+
+
+
+\newtheorem{example}{Example}           % Numbers consecutively
+
+% ── TikZ styles ───────────────────────────────────────────────────────────────
+\tikzset{
+  sbox/.style 2 args={rectangle, rounded corners=4pt,
+    draw=#1!70!black, fill=#1, text width=#2,
+    minimum height=1.0cm, align=center, font=\small},
+  sboxn/.style={rectangle, rounded corners=4pt,
+    draw=midgray!70, fill=lightgray, text width=3.6cm,
+    minimum height=0.85cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=5pt,width=4pt]}, thick, color=arrowgray},
+  darr/.style={-{Stealth[length=5pt,width=4pt]}, thick, dashed, color=midgray},
+  lbl/.style={font=\scriptsize\itshape, color=midgray, align=center},
+}
+
+
+
+
+
+\tikzstyle{stage} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!20, font=\small]
+\tikzstyle{input} = [rectangle, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=black, fill=green!10, font=\scriptsize]
+\tikzstyle{output} = [rectangle, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=black, fill=red!10, font=\scriptsize]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+\tikzstyle{data} = [font=\scriptsize, text width=2.2cm, text centered]
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Title ─────────────────────────────────────────────────────────────────────
+\begin{center}
+{\LARGE\bfseries\color{accent}Technical Report:\\[4pt]
+Spotted Lanternfly Detection\\[2pt]in Pheromone Trap Images}\\[14pt]
+{\normalsize\textbf{Project:} SLF Trap Detector\quad
+\textbf{Date:} March 2025\quad
+    \textbf{Author:} Pavle Suboti\'{c}}
+\end{center}
+
+\begin{callout}
+\textbf{Abstract.}
+We describe a proof-of-concept ML pipeline for detecting and counting adult
+    \textit{Lycorma delicatula} a.k.a Spotted Lanternfly(SLF) in pheromone sticky trap
+photographs. The challenge is to propose a model that has reasonable accuracy 
+    with no labeled training dataset, and limited to deployment on a CPU. These restrictions 
+    prevent the use of common state-of-the-art 
+    techniques.  Our proposed solution combines a HOG, LBP and Random Forest classifier trained from synthetic
+ground truth. A preliminary evaluations shows that our approach achieves 85\% precision, 77\% recall and 81\% F1 with no GPU and no manually labeled images. We conclude by a tentative design for a production
+deployment architecture that incorporates a feedback loop that uses uncertain in-production
+detections to continuously grow the training dataset with minimal expert effort.
+\end{callout}
+
+
+\section{Problem Definition}
+
+\subsection{Scope}
+The goal of the PoC is to detect and count adult \textit{Lycorma delicatula} in 
+pheromone sticky trap photographs.  This project is a proof-of-concept computer vision pipeline for detecting Spotted Lanternfly adults in pheromone trap photographs, specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
+production-ready monitoring platform, with all performance validation conducted on synthetic images and clear acknowledgment 
+that real-world performance requires validation on field data. 
+
+
+\subsection{Design Constraints}
+We outline several design constraints we need to consider in the design of the SLF detector PoC. The constraints are summarized in Table~\ref{tbl:constr}.
+
+\begin{table}[H]\centering\small
+\begin{tabularx}{\linewidth}{@{}L{4.8cm}X@{}}
+\toprule\textbf{Constraint}&\textbf{Impact}\\\midrule
+No labeled dataset & Cold-start; supervised training not immediately possible\\[3pt]
+Sticky glue board backgrounds & Specular highlights, variable colour, glue texture confounds edges\\[3pt]
+Debris and non-target insects & High false positive rate without species discrimination\\[3pt]
+Overlapping specimens & May be counted as one detection\\[3pt]
+Variable image quality & Lighting, focus, angle, resolution\\[3pt]
+High intra-class variation & Age, sex, wing position (spread vs.\ folded), wear\\
+\bottomrule
+\end{tabularx}
+\caption{Key constraints in pheromone trap image analysis.\label{tbl:constr}}
+\end{table}
+
+\newpage
+\section{Proposed Solution}
+In this section we describe the proposed solution. The challenge is to find 
+a machine learning approach that will give reasonable accuracy (F1\footnote{F1 is calculated as 2x(precision*recall/precision+recall)} $\approx 0.8$) 
+given the constraints. As most state-of-the-art 
+approaches (e.g., zero-shot deep learning~\cite{clip}) require a GPU or training data (~\cite{}), we propose a technique that 
+utilizes an heuristic approximation combined with classical machine learning techniques trained on synthetic data.
+
+\subsection{Pipeline}
+We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pipeline}. 
+
+\begin{figure}[htpb]
+\resizebox{0.7\textwidth}{!}{
+\begin{tikzpicture}
+% Main pipeline nodes
+\node[draw, rectangle, fill=green!20, text width=2.5cm, text centered] (input) at (0,0) {Raw Trap Image\\(Variable Size)};
+
+\node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (prep) at (0,-2.5) {Stage 1\\Preprocessing};
+
+\node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (prop) at (0,-5) {Stage 2\\Region Proposal};
+
+\node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (heur) at (0,-7.5) {Stage 3a\\Heuristic Filter};
+
+\node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (class) at (0,-10) {Stage 3b\\Descriptor Classifier};
+
+\node[draw, rectangle, fill=orange!20, text width=2.5cm, text centered] (output) at (0,-12.5) {SLF Count +\\Locations};
+
+% Detail boxes (right side)
+\node[text width=3cm, font=\small] at (4,-2.5) {CLAHE enhancement\\Glare removal\\Resize to 1024×1024};
+
+\node[text width=3cm, font=\small] at (4,-5) {MSER + Canny\\Size filtering\\IoU-NMS (0.35)};
+
+\node[text width=3cm, font=\small] at (4,-7.5) {Color compatibility\\Aspect ratio check\\Solidity analysis};
+
+\node[text width=3cm, font=\small] at (4,-10) {HOG + LBP features\\Random Forest\\Score threshold};
+
+% Data flow labels (left side)
+\node[text width=2cm, font=\scriptsize, text=gray] at (-3,-1.25) {1024×1024×3\\Enhanced};
+
+\node[text width=2cm, font=\scriptsize, text=gray] at (-3,-3.75) {\textasciitilde{}50\\Candidates};
+
+\node[text width=2cm, font=\scriptsize, text=gray] at (-3,-6.25) {\textasciitilde{}20\\Filtered};
+
+\node[text width=2cm, font=\scriptsize, text=gray] at (-3,-8.75) {Scored\\Detections};
+
+% Arrows
+\draw[->, thick] (input) -- (prep);
+\draw[->, thick] (prep) -- (prop);
+\draw[->, thick] (prop) -- (heur);
+\draw[->, thick] (heur) -- (class);
+\draw[->, thick] (class) -- (output);
+
+% Performance indicators
+\node[font=\tiny, text=red] at (6,-2.5) {<100ms};
+\node[font=\tiny, text=red] at (6,-5) {<50ms};
+\node[font=\tiny, text=green!50!black] at (6,-7.5) {ns/region};
+\node[font=\tiny, text=orange!70!black] at (6,-10) {ms/region};
+\end{tikzpicture}
+}
+\caption{Four-stage SLF detection pipeline}
+\label{fig:pipeline}
+\end{figure}
+
+Below we expand on each stage.
+
+\subsection{Pre-processing}
+The preprocessing stage (Stage 1) normalizes raw trap 
+images to ensure consistent input for the detection pipeline, regardless of varying field photography conditions. First we 
+use the \emph{CLAHE Enhancement} to remove uneven 
+lighting (bright spots, shadows, overcast vs sunny). CLAHE divides image into 8×8 grid tiles, and equalizes histogram in each tile separately. This makes local contrast consistent across the image, 
+regardless of global lighting. Next, we employ \emph{glare removal}. We find pixels brighter than 97\% of the image and use surrounding 
+pixel colors to "paint over" the glare spots. This eliminates false edges that would confuse the region proposer. Lastly, we resize to standard resolution. Since field photos may vary 
+wildly (e.g., 480×640, 1920×1080, 4032×3024, etc.), we standardize them to 1024×1024 for consistent processing. Thus 
+all downstream size thresholds have consistent meaning. This ensures that the same insect photographed under different 
+conditions produces similar-looking input to the detection stages, making the pipeline robust across varying field conditions.The 
+preprocessing is deterministic and fast (<100ms on CPU), making it suitable for real-time field deployment.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/stage1.png}
+    \caption{Trap image changes from preprocessing}
+    \label{fig:stage1}
+\end{figure}
+
+\begin{example}
+    Consider the images in Figure~\ref{fig:stage1}. 
+\end{example}
+
+\subsection{Region Proposal}
+The region proposal stage serves as the critical bridge between processing the entire image and focusing computational 
+resources on specific areas that might contain insects. Without this stage, the detection pipeline would face an intractable 
+search problem: examining every possible location and scale within a 1024×1024 image would require evaluating millions of 
+potential bounding boxes, making real-time detection impossible.
+
+The fundamental challenge is that insects represent a tiny fraction of the total image area. A typical trap photograph shows 
+mostly yellow sticky board background, with perhaps three to six small insects scattered across the surface. Rather than running 
+the expensive descriptor classifier on every possible rectangular region, the proposal stage uses fast classical computer vision 
+techniques to identify a manageable number of candidate locations that warrant closer examination.
+
+The implementation combines two complementary detection methods to ensure comprehensive coverage. MSER 
+(Maximally Stable Extremal Regions) excels at finding compact, blob-like structures that remain consistent across 
+multiple intensity thresholds. This technique is particularly effective at detecting insect bodies, which typically 
+appear as coherent dark or light regions against the trap background. MSER works by progressively thresholding the image 
+at different intensity levels and identifying regions that persist across multiple thresholds, indicating stable, 
+well-defined objects rather than noise or texture variations.
+
+The second method employs Canny edge detection followed by contour analysis to capture objects defined by strong boundaries rather 
+than uniform intensity. This approach complements MSER by detecting insects with prominent wing edges or clear silhouettes that might 
+not register as stable intensity regions. Wing outlines, body contours, and other edge-defined features that MSER might miss are 
+captured through this boundary-based approach.
+
+Both methods produce initial candidate regions that undergo size filtering to eliminate obviously incorrect detections. Regions 
+smaller than 300 square pixels likely represent noise, debris fragments, or imaging artifacts, while regions larger than 18,000 square 
+pixels probably encompass multiple objects or large background areas rather than individual insects. These size thresholds correspond roughly to 3-30 millimeter objects at typical trap photography distances.
+
+The candidates from both detection methods are then merged and processed through non-maximum suppression using intersection-over-union 
+scoring. This step eliminates duplicate detections where MSER and Canny contours have identified overlapping regions of the same object, ensuring that each potential insect is represented by a single bounding box rather than multiple overlapping proposals.
+
+The output of this stage is typically 15-50 bounding boxes per image, representing a dramatic reduction from the millions of possible locations while maintaining high confidence that genuine insects have been captured. The region proposer achieves very high recall, meaning it rarely misses actual insects, though it also generates false positives that represent debris, shadows, or other non-insect features. This high-recall, moderate-precision trade-off is appropriate for a proposal stage since downstream processing will refine the candidate list.
+The computational efficiency gained through region proposal is substantial. Instead of requiring the descriptor classifier to 
+extract HOG and LBP features from thousands of sliding window positions across multiple scales, the pipeline only needs to process 
+a few dozen carefully selected candidates. This focus enables real-time processing on CPU-only hardware while ensuring that the subsequent classification stages receive a manageable and well-curated set of potential targets for detailed analysis.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.8\textwidth}{!}{
+\begin{tikzpicture}
+
+% Input image
+\node[draw, rectangle, fill=green!20, minimum width=2.5cm, minimum height=2cm, align=center] (input) at (0,0) {Enhanced Image\\1024x1024x3};
+
+
+
+% MSER step
+\node[draw, rectangle, fill=blue!20, minimum width=2cm, minimum height=1cm, align=center] (mser) at (4,1.5) {MSER\\Detection};
+
+% Canny step  
+\node[draw, rectangle, fill=blue!20, minimum width=2cm, minimum height=1cm, align=center] (canny) at (4,-1.5) {Canny\\Edge Detection};
+
+% Intermediate results
+\node[draw, rectangle, fill=orange!20, minimum width=2cm, minimum height=1cm, align=center] (regions) at (8,1.5) {Stable Regions\\(blobs)};
+
+\node[draw, rectangle, fill=orange!20, minimum width=2cm, minimum height=1cm, align=center] (edges) at (8,-1.5) {Edge Contours\\(outlines)};
+
+% Visual representation of many detections
+\node[align=center, font=\scriptsize] at (8,0.7) {Many overlaps};
+\draw[fill=red!30, opacity=0.5] (7.5,0.2) rectangle (8.5,0.5);
+\draw[fill=red!30, opacity=0.5] (7.7,0.1) rectangle (8.3,0.6);
+\draw[fill=red!30, opacity=0.5] (7.6,0.3) rectangle (8.4,0.4);
+
+% Combination step
+\node[draw, rectangle, fill=purple!20, minimum width=2.5cm, minimum height=1cm, align=center] (combine) at (11,0) {Combine and\\Filter by Size};
+
+% NMS step
+\node[draw, rectangle, fill=red!20, minimum width=2.5cm, minimum height=1cm, align=center] (nms) at (14.5,0) {IoU-based NMS\\(threshold 0.35)};
+
+% Final output
+\node[draw, rectangle, fill=cyan!20, minimum width=2.5cm, minimum height=1.5cm, align=center] (output) at (18,0) {Candidate Regions};
+
+
+
+% Arrows
+\draw[->, thick] (input.east) -- (2.5,1.5) -- (mser.west);
+\draw[->, thick] (input.east) -- (2.5,-1.5) -- (canny.west);
+
+\draw[->, thick] (mser.east) -- (regions.west);
+\draw[->, thick] (canny.east) -- (edges.west);
+
+\draw[->, thick] (regions.east) -- (9.5,1.5) -- (9.5,0.5) -- (combine.west);
+\draw[->, thick] (edges.east) -- (9.5,-1.5) -- (9.5,-0.5) -- (combine.west);
+
+\draw[->, thick] (combine.east) -- (nms.west);
+\draw[->, thick] (nms.east) -- (output.west);
+
+% Step descriptions
+\node[font=\tiny, align=center] at (4,2.5) {Finds dark\\blobs on\\bright background};
+
+\node[font=\tiny, align=center] at (4,-2.5) {Detects object\\boundaries and\\edges};
+
+\node[font=\tiny, align=center] at (11,-1) {Remove too small\\or too large\\regions};
+
+\node[font=\tiny, align=center] at (14.5,-1) {Remove duplicate\\detections of\\same object};
+
+% Counts
+\node[font=\scriptsize, text=blue] at (8,2.2) {About 200};
+\node[font=\scriptsize, text=blue] at (8,-0.8) {About 150};
+\node[font=\scriptsize, text=blue] at (11,1) {About 100};
+\node[font=\scriptsize, text=blue] at (14.5,1) {About 50};
+
+% Title
+\node[font=\Large] at (9,3.5) {Region Proposal Stage};
+
+\end{tikzpicture}
+}
+\caption{Region proposal combines MSER blob detection with Canny edge detection to find candidate regions. Size filtering removes implausible detections, while IoU-based NMS eliminates duplicate detections of the same insect.}
+\label{fig:region_proposal}
+\end{figure}
+
+
+\begin{example}
+Consider Figure~\ref{fig:stage2}    
+\end{example}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/stage2.png}
+    \caption{Stage 2 Changes}
+    \label{fig:stage2}
+\end{figure}
+
+
+
+
+\subsection{Heuristic Filter}
+The heuristic filter stage (Stage 3a) serves as a fast, rule-based pre-screening step that evaluates candidate regions using expert knowledge about Spotted Lanternfly appearance. This stage receives the bounding boxes identified by the region proposer and applies three simple tests to determine which candidates are worth passing to the computationally expensive descriptor classifier.
+The first test examines color compatibility by converting each candidate patch to HSV color space and counting how many pixels fall within the known color ranges for SLF adults. Since SLF forewings are typically red-brown and their bodies are greyish, the filter looks for patches containing a meaningful proportion of pixels in these hue ranges. Patches that are mostly bright yellow trap board background or dark shadows receive low scores, while patches with substantial reddish-brown or grey content score higher.
+The second evaluation focuses on shape through aspect ratio analysis. Adult SLF at rest have their wings folded and appear wider than they are tall, typically with width-to-height ratios between 1.2 and 5.0. The filter gives perfect scores to candidates within this range and zero scores to regions that are too square or too elongated, as these shapes are inconsistent with SLF morphology.
+The third assessment measures solidity, which quantifies how compact and filled a region appears by comparing the actual contour area to its convex hull area. SLF adults present as solid, coherent shapes, whereas common debris like twigs, leaf fragments, or plant material tends to be spindly and fragmented. The filter favors candidates with high solidity scores that suggest a compact insect body rather than irregular debris.
+These three scores are combined into a single confidence measure, and only candidates exceeding a minimum threshold are passed forward to the descriptor classifier. This filtering approach is called heuristic because it relies on hand-crafted rules derived from domain expertise rather than learned patterns from data. The thresholds and color ranges were determined through manual inspection of SLF reference images and iterative testing on synthetic trap images.
+The heuristic filter achieves very high recall at the cost of modest precision, meaning it successfully identifies nearly all actual SLF while also passing through many false candidates. This trade-off is intentional since the primary goal is computational efficiency rather than final accuracy. By eliminating obviously incorrect candidates in microseconds per region, the filter reduces the workload for the downstream classifier from typically 50-80 candidates per image down to 15-20 promising regions. This preprocessing step makes the overall pipeline several times faster while ensuring that genuine insects are rarely discarded prematurely.
+
+\begin{figure}
+\resizebox{0.9\textwidth}{!}{
+\begin{tikzpicture}
+% Input
+\node[draw, rectangle, fill=cyan!20, minimum width=2.5cm, minimum height=1.5cm, align=center] (input) at (0,0) {Candidate Regions\\About 50 bboxes};
+
+% Three parallel scoring rules - spaced further apart
+\node[draw, rectangle, fill=blue!20, minimum width=2.5cm, minimum height=1.2cm, align=center] (color) at (5,3) {Color\\Compatibility\\Score};
+
+\node[draw, rectangle, fill=blue!20, minimum width=2.5cm, minimum height=1.2cm, align=center] (aspect) at (5,0) {Aspect Ratio\\Score};
+
+\node[draw, rectangle, fill=blue!20, minimum width=2.5cm, minimum height=1.2cm, align=center] (solidity) at (5,-3) {Solidity\\Score};
+
+% Visual examples moved further right and spaced out
+\node[align=center, font=\tiny] at (8.5,3.8) {HSV Color Match};
+\draw[fill=red!60] (8,4) rectangle (8.3,4.2);
+\draw[fill=gray!60] (8.4,4) rectangle (8.7,4.2);
+\node[font=\tiny] at (8.35,3.6) {SLF colors};
+
+\node[align=center, font=\tiny] at (8.5,0.8) {Width/Height Ratio};
+\draw[thick, green] (8,1) rectangle (9,1.2);
+\node[font=\tiny] at (8.5,0.6) {1.2-5.0 = Good};
+
+\node[align=center, font=\tiny] at (8.5,-2.2) {Shape Compactness};
+\draw[fill=gray!40] (8,-2) -- (8.3,-1.8) -- (8.6,-2) -- (8.3,-2.2) -- cycle;
+\node[font=\tiny] at (8.3,-2.6) {Solid = Good};
+
+% Score combination moved right
+\node[draw, rectangle, fill=purple!20, minimum width=2.5cm, minimum height=1.2cm, align=center] (combine) at (12,0) {Score\\Combination\\(Average)};
+
+% Threshold decision
+\node[draw, diamond, fill=orange!20, minimum width=2cm, minimum height=1cm, align=center] (threshold) at (15.5,0) {Score\\>= 0.18?};
+
+% Outputs moved further apart
+\node[draw, rectangle, fill=green!20, minimum width=2cm, minimum height=1cm, align=center] (pass) at (19,2) {Keep\\(About 20)};
+
+\node[draw, rectangle, fill=red!20, minimum width=2cm, minimum height=1cm, align=center] (reject) at (19,-2) {Reject\\(About 30)};
+
+% Arrows from input to scoring rules
+\draw[->, thick] (input.east) -- (2.5,3) -- (color.west);
+\draw[->, thick] (input.east) -- (2.5,0) -- (aspect.west);
+\draw[->, thick] (input.east) -- (2.5,-3) -- (solidity.west);
+
+% Arrows from scoring rules to combination
+\draw[->, thick] (color.east) -- (9.5,3) -- (9.5,0.5) -- (combine.west);
+\draw[->, thick] (aspect.east) -- (combine.west);
+\draw[->, thick] (solidity.east) -- (9.5,-3) -- (9.5,-0.5) -- (combine.west);
+
+% Arrow to threshold
+\draw[->, thick] (combine.east) -- (threshold.west);
+
+% Decision arrows
+\draw[->, thick] (threshold.north east) -- (17,1) -- (pass.west);
+\draw[->, thick] (threshold.south east) -- (17,-1) -- (reject.west);
+
+% Score examples moved away from boxes
+\node[font=\scriptsize, text=green] at (3.2,3.5) {Good: 0.8};
+\node[font=\scriptsize, text=red] at (3.2,2.5) {Bad: 0.1};
+
+\node[font=\scriptsize, text=green] at (3.2,0.5) {Good: 1.0};
+\node[font=\scriptsize, text=red] at (3.2,-0.5) {Bad: 0.0};
+
+\node[font=\scriptsize, text=green] at (3.2,-2.5) {Good: 0.9};
+\node[font=\scriptsize, text=red] at (3.2,-3.5) {Bad: 0.2};
+
+% Example calculations moved below the combination box
+\node[font=\tiny, align=center] at (12,1.5) {Good Example:\\(0.8+1.0+0.9)/3 = 0.9};
+\node[font=\tiny, align=center] at (12,-1.5) {Bad Example:\\(0.1+0.0+0.2)/3 = 0.1};
+
+% Labels on decision paths
+\node[font=\scriptsize, text=green] at (18,2.3) {Yes};
+\node[font=\scriptsize, text=red] at (18,-2.3) {No};
+
+% Title moved up
+\node[font=\Large] at (10,5) {Heuristic Filter - Three Scoring Rules};
+
+% Speed annotation moved away from other elements
+\node[font=\tiny, text=blue, align=center] at (1,-4.5) {Fast Pre-filter\\Microseconds\\per candidate};
+
+% Performance note moved to bottom right
+\node[font=\tiny, align=center] at (15.5,-4.5) {91\% recall, 41\% precision\\Very fast screening};
+\end{tikzpicture}
+}
+\caption{Heuristic filter applies three fast scoring rules in parallel.}
+
+\label{fig:heuristic_filter}
+\end{figure}
+
+
+\begin{example}
+Consider Figure~\ref{fig:stage3a}    
+\end{example}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/stage3a.png}
+    \caption{Stage 3a Changes}
+    \label{fig:stage3a}
+\end{figure}
+
+
+
+\subsection{Descriptor classifier: HOG + LBP + RF}
+The descriptor-based classifer stage (Stage 3b) represents a deliberate choice of classical
+computer vision methods over modern deep learning. While CNN-based detectors
+(YOLOv8, DETR) or vision transformers would likely achieve superior performance
+given sufficient training data, the HOG\,+\,LBP\,+\,RF combination provides an
+intermediate solution that works with minimal labeling effort, no GPU
+infrastructure, and straightforward deployment.
+
+\textbf{HOG} (64\,$\times$\,128\,px, 9 orientations, 8\,$\times$\,8 cells,
+2\,$\times$\,2 block normalisation) captures wing outline shape and body
+silhouette \cite{dalal2005hog}.
+\textbf{LBP} (radius 3, 24 points, uniform mapping) captures surface texture;
+the spotted forewing pattern produces a distinctly different histogram from
+plain glue board \cite{ojala2002lbp}.
+\textbf{HSV histogram} (18\,+\,8\,+\,8 bins) and \textbf{shape statistics}
+(aspect ratio, solidity, eccentricity, 7 Hu moments) complete the
+${\sim}600$-dimensional feature vector.
+Features are normalised with \code{StandardScaler} and classified by a
+\textbf{Random Forest} (200 trees, balanced class weights, max depth 12).
+
+This combination was common in computer vision applications circa 2005--2015,
+before deep learning became dominant. Modern insect detection systems typically
+use end-to-end CNN architectures \cite{saleem2019plant}, but require
+substantially more labeled training data (thousands vs.\ hundreds of examples)
+and GPU infrastructure for practical deployment.
+
+Instead of needing humans to manually draw bounding boxes around real SLF in real trap photos, the system generates its own training data through the synthetic image generator.
+
+
+The synthetic generator procedurally creates fake trap images by rendering SLF-like shapes on simulated trap board backgrounds. Since these images are generated by code, the system automatically knows exactly where each synthetic insect is located - it has perfect ground truth "for free" because it placed the insects there in the first place.
+When the synthetic generator creates an image with three SLF adults at coordinates (150,200), (400,350), and (800,450), those locations become the ground truth labels. No human annotation is required because the algorithm that created the image also records exactly what it created and where.
+The classifier training then works by running the region proposer and heuristic filter on these synthetic images, extracting proposal crops, and labeling them based on how well they overlap with the known synthetic insect locations. Crops that overlap significantly with a known synthetic insect become positive training examples, while crops that don't overlap become negative examples.
+
+
+The training is "lazy" - it doesn't happen when you create the classifier object, it happens the first time you try to use it for scoring. This is why there's a brief delay the first time you run the pipeline, but subsequent runs are fast because they load the cached model.
+
+
+The RF trains from \textbf{synthetic image ground truth}. Proposal crops with
+IoU\,$\geq$\,0.4 against a known synthetic GT box become positives; crops with
+IoU\,$<$\,0.1 become hard negatives. This ensures the training distribution
+matches exactly what the region proposer produces at inference time.
+
+
+\begin{example}
+Consider Figure~\ref{fig:stage3b}  
+\end{example}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/stage3b.png}
+    \caption{Stage 3b Changes}
+    \label{fig:stage3b}
+\end{figure}
+
+
+\subsection{Discussion}
+
+
+\subsubsection{Cold-Start Strategy}
+
+\textbf{Phase 0 (now):} HOG+LBP+RF trained on synthetic GT. P\,85\,\%,
+R\,77\,\%, F1\,81\,\%. Sufficient for labeling-assist use.
+
+\textbf{Phase 1:} Collect SLF reference photographs from iNaturalist
+(CC-licensed, species ID 49837). Use real cutouts as sprites in the synthetic
+generator to reduce the synthetic-to-real gap.
+
+\textbf{Phase 2:} Active labeling loop --- run pipeline on real trap images,
+route uncertain candidates to Label Studio, experts confirm/reject.
+Target: 50 confirmed real positives, 150 hard negatives.
+
+\textbf{Phase 3:} Call \code{DescriptorClassifier.train\_supervised()} with
+confirmed real crops. RF retrains in under a minute. With $\geq$500 real
+positives, fine-tune YOLOv8-small end-to-end.
+
+% ══════════════════════════════════════════════════════════════════════════════
+\subsubsection{Assumptions and Limitations}
+
+\textbf{Synthetic evaluation only.}
+The 85\,\%/77\,\% figures are on synthetic test images. Real-world performance
+will differ until the classifier is retrained on confirmed real positives.
+
+\textbf{Overlapping insects.}
+Adjacent SLF adults may be counted as one detection. 
+
+\textbf{No temporal context.}
+The pipeline processes images independently. Trap-level metadata (location,
+date, age) could improve precision via domain-constrained priors.
+
+\textbf{HOG sensitivity to image quality.}
+HOG degrades with severe blur or very low resolution. Images should be at
+least 800\,$\times$\,600\,px with the trap board filling most of the frame.
+
+
+
+\subsubsection{Why not CLIP?}
+The initial attempt used OpenAI's CLIP model for zero-shot classification via text prompts. However, we discovered it has 
+two practical drawbacks that inhibit its utility given our constraints:
+\begin{enumerate}
+    \item It requires a GPU — a requirement unavailable in the current deployment.
+    \item In the absence of those dependencies it falls back to a neutral stub, producing 0.5 scores for every candidate and reducing the classifier to the heuristic filter alone (measured: <38\% precision).
+\end{enumerate}
+
+CLIP remains the intended upgrade path once GPU infrastructure is available, as its visual representations are expected to generalise 
+better across trap manufacturers, lighting conditions, and geographic variation in SLF appearance.
+
+
+\section{PoC Evaluation}
+
+\medskip
+\begin{center}\small
+\begin{tabular}{@{}lcc@{}}
+\toprule & Heuristic-only baseline & \textbf{HOG+LBP+RF (current)}\\\midrule
+Precision & 41\,\% & \textbf{80\,\%}\\
+Recall    & 91\,\% & \textbf{83\,\%}\\
+F1        & 56\,\% & \textbf{81\,\%}\\
+GPU required & No & No\\
+Real labels required & No & No\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The heuristic filter achieves high recall (91\,\%) by design---it is
+intentionally permissive to avoid missing real insects---but suffers from
+low precision (41\,\%) due to lack of fine-grained discrimination. The
+descriptor classifier trades modest recall reduction for substantial
+precision improvement, yielding a much better F1 score.
+
+With heuristic first: Classifier processes ~15 patches per image
+Without heuristic: Classifier would process ~80+ patches per image
+This makes the pipeline 5-6x faster since the expensive classifier only runs on pre-filtered candidates. The heuristic achieves 91\% recall but only 41\% precision. The classifier then improves precision to 80\% while maintaining 83\% recall.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/pipeline.png}
+    \caption{Results of analysis on example image}
+    \label{fig:pipeline}
+\end{figure}
+
+\section{From PoC to Production}
+
+\subsection{Production deployment overview}
+
+In production, the detection pipeline sits behind a lightweight REST API. Field
+operators upload a trap photograph; the API returns a count, bounding boxes,
+per-detection confidence scores, and a structured JSON payload for ingestion
+into a monitoring database. A web dashboard presents results by trap site and
+date. Figure~\ref{fig:prodarch} shows the full data flow.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm and 1.1cm]
+
+%% ── LEFT COLUMN: main inference path ────────────────────────────────────────
+\node[sbox={colfield}{3.0cm}] (field)
+  {\textbf{Field device}\\{\scriptsize phone / trail camera}};
+
+\node[sbox={colingest}{3.0cm}, below=of field] (ingest)
+  {\textbf{Ingestion service}\\{\scriptsize validate · metadata · S3}};
+
+\node[sbox={colworker}{3.0cm}, below=of ingest] (worker)
+  {\textbf{Detection worker}\\{\scriptsize Docker container}};
+
+% pipeline stages inside worker box
+\node[sboxn, below=0.25cm of worker, xshift=0cm] (s1)
+  {Stage 1: Preprocess\\{\scriptsize CLAHE · deglare}};
+\node[sboxn, below=0.3cm of s1] (s2)
+  {Stage 2: Region proposal\\{\scriptsize MSER + Canny · NMS}};
+\node[sboxn, below=0.3cm of s2] (s3)
+  {Stage 3a: Heuristic filter\\{\scriptsize HSV · shape}};
+\node[sboxn, below=0.3cm of s3] (s4)
+  {Stage 3b: RF classifier\\{\scriptsize HOG + LBP · ONNX}};
+
+\node[sbox={colworker}{3.0cm}, below=0.3cm of s4] (result)
+  {\textbf{Result JSON}\\{\scriptsize count · boxes · scores · model\_ver}};
+
+\node[sbox={colstore}{3.0cm}, below=of result] (db)
+  {\textbf{Results database}\\{\scriptsize counts · bbox logs · model ver}};
+
+\node[sbox={colfield}{3.0cm}, below=of db] (dash)
+  {\textbf{Monitoring dashboard}\\{\scriptsize maps · counts · alerts}};
+
+% arrows left column
+\draw[arr] (field)  -- node[lbl,right]{HTTPS upload} (ingest);
+\draw[arr] (ingest) -- node[lbl,right]{job queue} (worker);
+\draw[arr] (worker.south) -- (s1.north);
+\draw[arr] (s1) -- (s2);
+\draw[arr] (s2) -- (s3);
+\draw[arr] (s3) -- (s4);
+\draw[arr] (s4) -- (result.north);
+\draw[arr] (result) -- node[lbl,right]{write result} (db);
+\draw[arr] (db)     -- (dash);
+
+%% ── RIGHT COLUMN: feedback path ─────────────────────────────────────────────
+\node[sbox={colreview}{3.0cm}, right=2.2cm of result] (queue)
+  {\textbf{Review queue}\\{\scriptsize score 0.45--0.70}};
+
+\node[sbox={colreview}{3.0cm}, below=of queue] (labeltool)
+  {\textbf{Annotation tool}\\{\scriptsize Label Studio}\\
+   {\scriptsize expert confirm / reject}};
+
+\node[sbox={colstore}{3.0cm}, below=of labeltool] (datastore)
+  {\textbf{Training data store}\\{\scriptsize confirmed pos/neg}\\
+   {\scriptsize synthetic · versioned}};
+
+\node[sbox={colretrain}{3.0cm}, below=of datastore] (retrain)
+  {\textbf{Retraining job}\\{\scriptsize merge · train · evaluate}\\
+   {\scriptsize gate · ONNX · deploy}};
+
+% arrows right column
+\draw[darr] (result.east) -- ++(0.55,0) |-
+  node[lbl, pos=0.25, right]{flag uncertain} (queue.west);
+\draw[arr] (queue) -- node[lbl,right]{pre-annotated tasks} (labeltool);
+\draw[arr] (labeltool) -- node[lbl,right]{confirmed labels} (datastore);
+\draw[arr] (datastore) -- node[lbl,right]{$\geq$50 new labels} (retrain);
+
+% retrain feeds back to worker
+\draw[arr] (retrain.west) -- ++(-0.55,0) |-
+  node[lbl, pos=0.25, left]{deploy new model} (worker.east);
+
+%% ── Bounding box around pipeline stages ─────────────────────────────────────
+\begin{pgfonlayer}{background}
+  \node[draw=darkgreen!40, fill=colworker!30, rounded corners=5pt,
+        fit=(s1)(s4), inner sep=5pt] {};
+\end{pgfonlayer}
+
+\end{tikzpicture}
+\caption{Production deployment and feedback loop architecture. The main
+inference path (left) processes uploaded trap images through the detection
+pipeline. Uncertain detections (score 0.45--0.70) are routed to the review
+queue (right), where expert labels accumulate until a retraining job is
+triggered. The retrained model is deployed back to the detection worker,
+closing the loop.}
+\label{fig:prodarch}
+\end{figure}
+
+\subsection{Component descriptions}
+
+\textbf{Ingestion service.}
+A thin stateless HTTP service (FastAPI or similar) that validates image uploads,
+attaches metadata (trap ID, GPS, timestamp), writes the raw file to object
+storage (S3/GCS), and pushes a job reference to a message queue. No ML
+dependencies; independently scalable.
+
+\textbf{Detection worker.}
+A containerised Python process that pulls jobs, loads images, and runs the
+four-stage pipeline. The RF classifier is exported to ONNX at deployment time,
+removing the scikit-learn runtime dependency and reducing per-image inference
+time. Results are written to the database tagged with the model version,
+enabling retrospective analysis when the model changes.
+
+\textbf{Review queue and annotation tool.}
+Detections with a final score in the \textbf{uncertainty band 0.45--0.70}
+(just around the classification boundary) are routed to a review queue rather
+than silently accepted or rejected. These are precisely the cases where the
+model is least confident and where expert labels are most informative. Label
+Studio provides a confirm/reject interface; an expert can typically process
+8--12 uncertain crops in five minutes. The pipeline already exports
+pre-annotated Label Studio tasks via \code{scripts/annotate\_helper.py}.
+
+\textbf{Training data store.}
+A versioned directory structure (or DVC-tracked dataset) keeping confirmed
+positives, confirmed negatives, and synthetic images in separate partitions.
+This allows the retraining job to adjust the mixing ratio as real-label counts
+grow: early runs are dominated by synthetics; later runs are dominated by
+confirmed real examples.
+
+\textbf{Retraining job.}
+Triggered when $\geq$50 new confirmed labels have accumulated since the last
+retraining. The job: (1)~merges new and existing data, (2)~retrains the RF
+or fine-tunes YOLOv8 depending on the label count, (3)~evaluates against the
+held-out validation set, (4)~gates deployment --- the new model is only
+promoted if both precision and recall meet or exceed the current model, (5)~
+exports to ONNX, and (6)~deploys to the detection worker.
+
+\subsection{Feedback loop dynamics}
+
+The loop has a self-improving character. As more images are processed, more
+uncertain candidates accumulate; confirmed labels produce a better model; a
+better model is more decisive, producing fewer uncertain candidates per image.
+The loop converges toward a stable operating point where expert review effort
+decreases over time (Figure~\ref{fig:feedbackloop}).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.7cm and 1.6cm,
+  cnode/.style={rectangle, rounded corners=4pt, draw=accent!60,
+    fill=colworker, text width=3.0cm, minimum height=0.9cm,
+    align=center, font=\small}]
+
+\node[cnode] (vol)   {\textbf{More images}\\processed};
+\node[cnode, right=of vol]  (unc)   {\textbf{More uncertain}\\candidates};
+\node[cnode, right=of unc]  (lab)   {\textbf{More confirmed}\\labels};
+\node[cnode, below=1.1cm of lab]  (model) {\textbf{Better model}\\deployed};
+\node[cnode, below=1.1cm of vol]  (dec)   {\textbf{Fewer uncertain}\\per image};
+
+\draw[arr, bend left=10] (vol)   to node[lbl,above]{routes to queue} (unc);
+\draw[arr, bend left=10] (unc)   to node[lbl,above]{expert review}   (lab);
+\draw[arr, bend left=10] (lab)   to node[lbl,right]{triggers retrain} (model);
+\draw[arr, bend left=10] (model) to node[lbl,below]{more decisive}   (dec);
+\draw[arr, bend left=10] (dec)   to node[lbl,left]{frees capacity}   (vol);
+
+\end{tikzpicture}
+\caption{Feedback loop dynamics. The cycle is self-improving: better models
+reduce the per-image review burden, freeing expert capacity to process more
+images, which accelerates label accumulation.}
+\label{fig:feedbackloop}
+\end{figure}
+
+Three failure modes can break this loop and should be monitored:
+
+\begin{enumerate}[leftmargin=1.6em, itemsep=3pt]
+  \item \textbf{Label starvation} --- the review queue fills faster than
+        experts can clear it. Mitigation: raise the detection threshold
+        temporarily (fewer detections, fewer reviews) or onboard additional
+        reviewers.
+  \item \textbf{Concept drift} --- a new trap type or change in field
+        photography shifts the image distribution so that confident predictions
+        start degrading. Mitigation: monitor the fraction of detections falling
+        into the uncertainty band over time; a rising trend signals drift and
+        triggers a targeted re-labeling campaign.
+  \item \textbf{Annotation fatigue} --- reviewer accuracy drops in large
+        batches. Mitigation: cap sessions at 30 minutes; use inter-annotator
+        agreement on a 5\,\% overlap sample to detect label quality drift.
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+\section{Conclusion}
+This work presents a PoC computer vision pipeline for detecting and counting Spotted Lanternfly adults in pheromone trap photographs, designed to address the critical challenge of having no existing labeled training dataset. The four-stage pipeline combines classical image processing (CLAHE preprocessing, MSER+Canny region proposal) with a heuristic color and shape filter, followed by a HOG+LBP+Random Forest descriptor classifier trained entirely from synthetic ground truth data. This approach
+achieves 80\% precision and 83\% recall on synthetic test images while requiring no GPU, no internet access, and no manually labeled real images—making it immediately deployable in resource-constrained field environments. The system includes a production architecture with a feedback loop that routes uncertain detections (scores 0.45-0.70) to expert review, enabling continuous improvement through active learning as confirmed labels accumulate, with a clear upgrade path to modern CNN-based detectors once sufficient real training data and GPU infrastructure become available. While performance on real trap images remains to be validated, this classical computer vision baseline provides a practical foundation for automated SLF monitoring that can begin generating useful data immediately while bootstrapping the collection of labeled examples needed for more sophisticated approaches
+
+
+\bibliographystyle{plain}  % Citation style: plain, alpha, unsrt, etc.
+\bibliography{report}      % References the report.bib file (no .bib extension)
+
+
+\end{document}
