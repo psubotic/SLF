@@ -1,4 +1,4 @@
-# SLF on Trap Detector 
+# SLF Detector 
 [![SLF Detector Tests](https://github.com/psubotic/SLF/actions/workflows/slf-tests.yaml/badge.svg)](https://github.com/psubotic/SLF/actions/workflows/slf-tests.yaml)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen)](https://github.com/psubotic/SLF)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/)
