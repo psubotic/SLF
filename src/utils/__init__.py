@@ -1,5 +1,9 @@
-from .visualization import (add_summary_overlay, draw_detections,
-                            draw_proposals, make_comparison_grid)
+from .visualization import (
+    add_summary_overlay,
+    draw_detections,
+    draw_proposals,
+    make_comparison_grid,
+)
 
 __all__ = [
     "draw_detections",

@@ -9,6 +9,7 @@ Usage:
 import argparse
 import json
 import logging
+
 # Ensure src/ is in Python path for local imports
 import sys
 import time
@@ -20,14 +21,14 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.augmentation.synthetic_generator import (SyntheticConfig,
-                                                  SyntheticTrapGenerator)
-from src.detection.descriptor_classifier import (DescriptorClassifier,
-                                                 DescriptorClassifierConfig)
+from src.augmentation.synthetic_generator import SyntheticConfig, SyntheticTrapGenerator
+from src.detection.descriptor_classifier import (
+    DescriptorClassifier,
+    DescriptorClassifierConfig,
+)
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
 from src.detection.pipeline import SLFDetectionPipeline
-from src.detection.preprocessor import (PreprocessorConfig,
-                                        TrapImagePreprocessor)
+from src.detection.preprocessor import PreprocessorConfig, TrapImagePreprocessor
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 from src.utils.visualization import add_summary_overlay, draw_detections
 
