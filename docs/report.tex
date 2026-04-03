@@ -117,9 +117,9 @@ which has a sticky surface that attracts various insects, fallen debris, leaves 
 tainted by blur, light etc. making this task challanging. A trap with caught insects is shown in 
 Figure~\ref{fig:example}. We will use this image as a running example throughout the report. 
 
-\begin{figure}
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/example.png}
+    \includegraphics[width=0.3\linewidth]{images/example.png}
     \caption{Example trap image}
     \label{fig:example}
 \end{figure}
@@ -606,10 +606,8 @@ Test/Evaluation & \textbf{50--100} & \textbf{250--500} & \textbf{Performance met
 \end{table}
 
 
+To evaluate the proposed SLF detection system, we generated a comprehensive synthetic dataset comprising 170--330 trap images with 750--1450 individual insect instances (Table~\ref{tab:synthetic_data_composition}). The training partition (100--200 images, 400--800 instances) demonstrates the cold-start capability by providing sufficient data for Random Forest training without real labeled examples. The test partition (50--100 images, 250--500 instances) enabled rigorous performance evaluation, revealing that the complete HOG+LBP+Random Forest pipeline achieves 80\% precision and 83\% recall compared to 41\% precision and 91\% recall for heuristic filtering alone. This synthetic validation framework supports immediate field deployment while eliminating the time and cost barriers associated with manual data annotation. The precision results are summarized below:
 
-The synthetic dataset for proof-of-concept evaluation comprised 170--330 trap images containing 750--1450 individual SLF instances, partitioned across training, validation, and test sets as detailed in Table~\ref{tab:synthetic_data_composition}. The training subset (100--200 images, 400--800 instances) provided sufficient data for Random Forest classifier training without requiring real labeled examples, demonstrating the cold-start capability of the approach. A smaller validation set (20--30
-images, 100--150 instances) enabled hyperparameter tuning and model selection. The test/evaluation subset (50--100 images, 250--500 instances) served as ground truth for computing the precision and recall metrics that compare the heuristic-only filter (41\% precision, 91\% recall) against the complete HOG+LBP+Random Forest system (80\% precision, 83\% recall). This synthetic evaluation framework validates the feasibility of immediate field deployment without prior data collection, while the
-substantial performance improvement from 56\% to 81\% F1-score justifies the computational overhead of the descriptor classification stage. The precision results are summarized below:
 
 
 \medskip
@@ -625,9 +623,10 @@ Real labels required & No & No\\
 \end{tabular}
 \end{center}
 
-With heuristic first the Classifier processes ~15 patches per image. Without heuristic the classifier processes ~80+ patches per image.
-Thus the use of heuristics makes the pipeline 5-6x faster since the expensive classifier only runs on pre-filtered candidates.  Specifically, 
-for our running example our approach reduced candidates from 380 to 10 through Stages 2-3b. 
+In terms of performance, the heuristic first the classifier processes ~15 patches per image. Without the heuristic, the classifier 
+processes ~80+ patches per image. Thus the use of heuristics makes the pipeline 5-6x faster since the expensive classifier only runs 
+on pre-filtered candidates.  Specifically, as shown in Figure~\ref{fig:pipeline}, for our running example, our approach reduced 
+candidates from 380 to 10 through Stages 2-3b. 
 
 
 \begin{figure}
@@ -641,7 +640,7 @@ for our running example our approach reduced candidates from 380 to 10 through S
 In this section we provide a tentative vision of how a production system 
 may look like. 
 
-\subsection{Deployment}
+\subsection{Production Deployment}
 
 In production, the detection pipeline sits behind a lightweight REST API. Field
 operators upload a trap photograph; the API returns a count, bounding boxes,
