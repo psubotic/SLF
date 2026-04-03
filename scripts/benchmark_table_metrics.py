@@ -23,14 +23,14 @@ import numpy as np
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
-from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
-from src.detection.region_proposer import RegionProposer, RegionProposerConfig
+from src.augmentation.synthetic_generator import (SyntheticConfig,
+                                                  SyntheticTrapGenerator)
+from src.detection.descriptor_classifier import (DescriptorClassifier,
+                                                 DescriptorClassifierConfig)
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
-from src.detection.descriptor_classifier import (
-    DescriptorClassifier,
-    DescriptorClassifierConfig,
-)
+from src.detection.preprocessor import (PreprocessorConfig,
+                                        TrapImagePreprocessor)
+from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 
 logging.getLogger().setLevel(logging.WARNING)
 

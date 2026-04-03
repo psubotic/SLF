@@ -1,9 +1,10 @@
-import numpy as np
-import pytest
+import os
 import sys
 import tempfile
-import os
 from pathlib import Path
+
+import numpy as np
+import pytest
 
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent
@@ -12,9 +13,7 @@ sys.path.insert(0, str(project_root))
 # Direct import to bypass __init__.py issues
 try:
     from src.detection.descriptor_classifier import (
-        DescriptorClassifier,
-        DescriptorClassifierConfig,
-    )
+        DescriptorClassifier, DescriptorClassifierConfig)
 except ImportError:
     pytest.skip("DescriptorClassifier module not available", allow_module_level=True)
 

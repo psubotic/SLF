@@ -10,10 +10,12 @@ import cv2
 import numpy as np
 import yaml
 
-from .descriptor_classifier import DescriptorClassifier, DescriptorClassifierConfig
+from .descriptor_classifier import (DescriptorClassifier,
+                                    DescriptorClassifierConfig)
 from .feature_filter import FeatureFilter, FeatureFilterConfig
-from .preprocessor import TrapImagePreprocessor, PreprocessorConfig
-from .region_proposer import RegionProposer, RegionProposerConfig, RegionProposal
+from .preprocessor import PreprocessorConfig, TrapImagePreprocessor
+from .region_proposer import (RegionProposal, RegionProposer,
+                              RegionProposerConfig)
 
 logger = logging.getLogger(__name__)
 

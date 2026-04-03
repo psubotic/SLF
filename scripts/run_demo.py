@@ -9,6 +9,8 @@ Usage:
 import argparse
 import json
 import logging
+# Ensure src/ is in Python path for local imports
+import sys
 import time
 from pathlib import Path
 from typing import List, Tuple
@@ -16,21 +18,18 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 
-# Ensure src/ is in Python path for local imports
-import sys
-
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
-from src.detection.descriptor_classifier import (
-    DescriptorClassifier,
-    DescriptorClassifierConfig,
-)
-from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
-from src.detection.region_proposer import RegionProposer, RegionProposerConfig
+from src.augmentation.synthetic_generator import (SyntheticConfig,
+                                                  SyntheticTrapGenerator)
+from src.detection.descriptor_classifier import (DescriptorClassifier,
+                                                 DescriptorClassifierConfig)
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
 from src.detection.pipeline import SLFDetectionPipeline
-from src.utils.visualization import draw_detections, add_summary_overlay
+from src.detection.preprocessor import (PreprocessorConfig,
+                                        TrapImagePreprocessor)
+from src.detection.region_proposer import RegionProposer, RegionProposerConfig
+from src.utils.visualization import add_summary_overlay, draw_detections
 
 logging.basicConfig(
     level=logging.INFO,

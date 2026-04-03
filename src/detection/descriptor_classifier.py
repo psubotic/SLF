@@ -364,9 +364,7 @@ class DescriptorClassifier:
     def _generate_synthetic_patches(self, n: int) -> List[np.ndarray]:
         """Generate synthetic SLF-like patches for OC-SVM / RF training."""
         from src.augmentation.synthetic_generator import (
-            SyntheticTrapGenerator,
-            SyntheticConfig,
-        )
+            SyntheticConfig, SyntheticTrapGenerator)
 
         rng = np.random.default_rng(0)
         gen = SyntheticTrapGenerator(

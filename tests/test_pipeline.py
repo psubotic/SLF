@@ -1,19 +1,20 @@
-import numpy as np
-import pytest
 import sys
 from pathlib import Path
 
+import numpy as np
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
-from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
-from src.detection.region_proposer import RegionProposer, RegionProposerConfig
+from src.augmentation.synthetic_generator import (SyntheticConfig,
+                                                  SyntheticTrapGenerator)
+from src.detection.descriptor_classifier import (DescriptorClassifier,
+                                                 DescriptorClassifierConfig)
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
-from src.detection.descriptor_classifier import (
-    DescriptorClassifier,
-    DescriptorClassifierConfig,
-)
-from src.detection.pipeline import SLFDetectionPipeline, PipelineResult
+from src.detection.pipeline import PipelineResult, SLFDetectionPipeline
+from src.detection.preprocessor import (PreprocessorConfig,
+                                        TrapImagePreprocessor)
+from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 
 
 @pytest.fixture(scope="module")

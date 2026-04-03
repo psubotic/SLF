@@ -11,7 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
+from src.augmentation.synthetic_generator import (SyntheticConfig,
+                                                  SyntheticTrapGenerator)
 
 
 def main():
