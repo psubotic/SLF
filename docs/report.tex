@@ -23,7 +23,6 @@
 
 
 
-% ── Colours ───────────────────────────────────────────────────────────────────
 \definecolor{accent}{RGB}{30, 100, 60}
 \definecolor{darkgreen}{RGB}{30, 100, 60}
 \definecolor{lightgray}{RGB}{245, 245, 245}
@@ -64,10 +63,8 @@
   skipabove=8pt,skipbelow=8pt]{callout}
 
 
-
 \newtheorem{example}{Example}           % Numbers consecutively
 
-% ── TikZ styles ───────────────────────────────────────────────────────────────
 \tikzset{
   sbox/.style 2 args={rectangle, rounded corners=4pt,
     draw=#1!70!black, fill=#1, text width=#2,
@@ -81,9 +78,6 @@
 }
 
 
-
-
-
 \tikzstyle{stage} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!20, font=\small]
 \tikzstyle{input} = [rectangle, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=black, fill=green!10, font=\scriptsize]
 \tikzstyle{output} = [rectangle, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=black, fill=red!10, font=\scriptsize]
@@ -91,10 +85,8 @@
 \tikzstyle{data} = [font=\scriptsize, text width=2.2cm, text centered]
 
 
-% ══════════════════════════════════════════════════════════════════════════════
 \begin{document}
 
-% ── Title ─────────────────────────────────────────────────────────────────────
 \begin{center}
 {\LARGE\bfseries\color{accent}Technical Report:\\[4pt]
 Spotted Lanternfly Detection\\[2pt]in Pheromone Trap Images}\\[14pt]
@@ -119,9 +111,22 @@ detections to continuously grow the training dataset with minimal expert effort.
 
 \section{Problem Definition}
 
+The goal of this project to detect and count adult \textit{Lycorma delicatula}, refered to as SLF, in 
+pheromone sticky trap photographs. A SLF is an insect with wings. These insects get caught on a trap, 
+which has a sticky surface that attracts various insects, fallen debris, leaves etc. The photograph can be 
+tainted by blur, light etc. making this task challanging. A trap with caught insects is shown in 
+Figure~\ref{fig:example}. We will use this image as a running example throughout the report. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/example.png}
+    \caption{Example trap image}
+    \label{fig:example}
+\end{figure}
+
+
 \subsection{Scope}
-The goal of the PoC is to detect and count adult \textit{Lycorma delicatula} in 
-pheromone sticky trap photographs.  This project is a proof-of-concept computer vision pipeline for detecting Spotted Lanternfly adults in pheromone trap photographs, specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
+ This project is only a proof-of-concept specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
 production-ready monitoring platform, with all performance validation conducted on synthetic images and clear acknowledgment 
 that real-world performance requires validation on field data. 
 
@@ -147,9 +152,10 @@ High intra-class variation & Age, sex, wing position (spread vs.\ folded), wear\
 \section{Proposed Solution}
 In this section we describe the proposed solution. The challenge is to find 
 a machine learning approach that will give reasonable accuracy (F1\footnote{F1 is calculated as 2x(precision*recall/precision+recall)} $\approx 0.8$) 
-given the constraints. As most state-of-the-art 
-approaches (e.g., zero-shot deep learning~\cite{clip}) require a GPU or training data (~\cite{}), we propose a technique that 
-utilizes an heuristic approximation combined with classical machine learning techniques trained on synthetic data.
+given the constraints. Most state-of-the-art zero shot
+approaches (e.g., zero-shot deep learning~\cite{clip}) require a GPU and deep learning require training data (~\cite{deep}). We therefore 
+propose a technique that utilizes an heuristic approximation combined with classical machine learning techniques trained on 
+synthetic data.
 
 \subsection{Pipeline}
 We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pipeline}. 
@@ -173,7 +179,7 @@ We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pip
 % Detail boxes (right side)
 \node[text width=3cm, font=\small] at (4,-2.5) {CLAHE enhancement\\Glare removal\\Resize to 1024×1024};
 
-\node[text width=3cm, font=\small] at (4,-5) {MSER + Canny\\Size filtering\\IoU-NMS (0.35)};
+\node[text width=3cm, font=\small] at (4,-5) {MSER + Canny\\Size filtering};
 
 \node[text width=3cm, font=\small] at (4,-7.5) {Color compatibility\\Aspect ratio check\\Solidity analysis};
 
@@ -228,7 +234,7 @@ preprocessing is deterministic and fast (<100ms on CPU), making it suitable for 
 \end{figure}
 
 \begin{example}
-    Consider the images in Figure~\ref{fig:stage1}. 
+Consider the images in Figure~\ref{fig:stage1}. The original image is on the top left and the transformed image on the bottom left and top and bottom right. Note that the insects on the trap become visually more proponent after each transformation.
 \end{example}
 
 \subsection{Region Proposal}
