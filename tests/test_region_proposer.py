@@ -2,13 +2,16 @@ import numpy as np
 import pytest
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 
+
 @pytest.fixture
 def proposer():
     return RegionProposer(RegionProposerConfig(min_area_px=100, max_area_px=50000))
+
 
 def make_image_with_blobs(n_blobs=3, size=512, seed=7):
     rng = np.random.default_rng(seed)
@@ -20,8 +23,10 @@ def make_image_with_blobs(n_blobs=3, size=512, seed=7):
         ry = rng.integers(12, 35)
         color = tuple(rng.integers(20, 80, size=3).tolist())
         import cv2
+
         cv2.ellipse(img, (int(cx), int(cy)), (int(rx), int(ry)), 0, 0, 360, color, -1)
     return img
+
 
 class TestRegionProposer:
     def test_returns_list(self, proposer):
@@ -63,6 +68,7 @@ class TestRegionProposer:
 
     def test_iou_calculation(self):
         from src.detection.region_proposer import RegionProposer
+
         iou = RegionProposer._iou((0, 0, 10, 10), (0, 0, 10, 10))
         assert abs(iou - 1.0) < 1e-5
 

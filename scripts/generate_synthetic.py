@@ -16,10 +16,19 @@ from src.augmentation.synthetic_generator import SyntheticTrapGenerator, Synthet
 
 def main():
     parser = argparse.ArgumentParser(description="SLF Synthetic Dataset Generator")
-    parser.add_argument("--n", type=int, default=100, help="Number of images to generate")
-    parser.add_argument("--out", type=str, default="data/synthetic/", help="Output directory")
+    parser.add_argument(
+        "--n", type=int, default=100, help="Number of images to generate"
+    )
+    parser.add_argument(
+        "--out", type=str, default="data/synthetic/", help="Output directory"
+    )
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--ref-dir", type=str, default=None, help="Directory of SLF reference PNGs with alpha")
+    parser.add_argument(
+        "--ref-dir",
+        type=str,
+        default=None,
+        help="Directory of SLF reference PNGs with alpha",
+    )
     parser.add_argument("--insects-min", type=int, default=1)
     parser.add_argument("--insects-max", type=int, default=8)
     args = parser.parse_args()

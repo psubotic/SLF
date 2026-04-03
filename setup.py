@@ -21,7 +21,6 @@ setup(
         "ml": [
             "torch>=2.1.0",
             "torchvision>=0.16.0",
-
         ],
         "augmentation": [
             "albumentations>=1.3.1",

@@ -2,19 +2,25 @@ import numpy as np
 import pytest
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
 from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
-from src.detection.descriptor_classifier import DescriptorClassifier, DescriptorClassifierConfig
+from src.detection.descriptor_classifier import (
+    DescriptorClassifier,
+    DescriptorClassifierConfig,
+)
 from src.detection.pipeline import SLFDetectionPipeline, PipelineResult
 
 
 @pytest.fixture(scope="module")
 def synthetic_image():
-    gen = SyntheticTrapGenerator(SyntheticConfig(insects_per_image_range=(2, 4), seed=99))
+    gen = SyntheticTrapGenerator(
+        SyntheticConfig(insects_per_image_range=(2, 4), seed=99)
+    )
     img, ann = gen.generate_one(image_id=0)
     return img, ann
 
@@ -23,12 +29,16 @@ def synthetic_image():
 def pipeline():
     return SLFDetectionPipeline(
         preprocessor=TrapImagePreprocessor(PreprocessorConfig(target_size=(512, 512))),
-        proposer=RegionProposer(RegionProposerConfig(min_area_px=200, max_area_px=20000)),
+        proposer=RegionProposer(
+            RegionProposerConfig(min_area_px=200, max_area_px=20000)
+        ),
         feature_filter=FeatureFilter(FeatureFilterConfig()),
-        classifier=DescriptorClassifier(DescriptorClassifierConfig(
-            model_cache_path=None,  # Don't cache during tests
-            auto_train_n_synthetic=100  # Faster training for tests
-        )),
+        classifier=DescriptorClassifier(
+            DescriptorClassifierConfig(
+                model_cache_path=None,  # Don't cache during tests
+                auto_train_n_synthetic=100,  # Faster training for tests
+            )
+        ),
     )
 
 

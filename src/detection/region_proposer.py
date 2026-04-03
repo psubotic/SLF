@@ -27,8 +27,8 @@ class RegionProposerConfig:
 
 @dataclass
 class RegionProposal:
-    bbox: BBox          # (x, y, w, h)
-    source: str         # "mser" | "contour"
+    bbox: BBox  # (x, y, w, h)
+    source: str  # "mser" | "contour"
     score: float = 1.0  # placeholder; filled by feature_filter
 
 
@@ -77,13 +77,17 @@ class RegionProposer:
 
     def _contour_proposals(self, gray: np.ndarray) -> List[RegionProposal]:
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edges = cv2.Canny(blurred, self.cfg.contour_canny_low, self.cfg.contour_canny_high)
+        edges = cv2.Canny(
+            blurred, self.cfg.contour_canny_low, self.cfg.contour_canny_high
+        )
 
         # Close small gaps so wing outlines form closed contours
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         edges = cv2.dilate(edges, kernel, iterations=1)
 
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
         proposals = []
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)

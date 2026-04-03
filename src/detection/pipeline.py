@@ -20,16 +20,17 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Detection:
-    bbox: Tuple[int, int, int, int]     # (x, y, w, h) in processed image space
-    heuristic_score: float              # Score from FeatureFilter [0,1]
-    classifier_score: float             # Score from DescriptorClassifier [0,1]
-    final_score: float                  # Combined or direct score
-    label: int                          # 1 = SLF, 0 = not SLF (post-threshold)
+    bbox: Tuple[int, int, int, int]  # (x, y, w, h) in processed image space
+    heuristic_score: float  # Score from FeatureFilter [0,1]
+    classifier_score: float  # Score from DescriptorClassifier [0,1]
+    final_score: float  # Combined or direct score
+    label: int  # 1 = SLF, 0 = not SLF (post-threshold)
 
     @property
     def xyxy(self) -> Tuple[int, int, int, int]:
         x, y, w, h = self.bbox
         return x, y, x + w, y + h
+
 
 @dataclass
 class PipelineResult:

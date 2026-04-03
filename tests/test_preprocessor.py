@@ -3,9 +3,11 @@ import pytest
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
+
 
 @pytest.fixture
 def preprocessor():
@@ -36,7 +38,7 @@ class TestPreprocessor:
     def test_glare_detected_on_bright_image(self, preprocessor):
         """An image with a bright white patch should have glare detected."""
         img = make_random_image(seed=1)
-        img[100:200, 100:200] = 255   # Bright patch
+        img[100:200, 100:200] = 255  # Bright patch
         result = preprocessor(img)
         assert result.glare_mask.sum() > 0
 

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import json
@@ -9,7 +8,9 @@ import cv2
 import numpy as np
 
 
-def load_image(path: str | Path, target_size: Optional[Tuple[int, int]] = None) -> np.ndarray:
+def load_image(
+    path: str | Path, target_size: Optional[Tuple[int, int]] = None
+) -> np.ndarray:
     img = cv2.imread(str(path))
     if img is None:
         raise FileNotFoundError(f"Could not read image: {path}")
@@ -42,4 +43,4 @@ def save_result_json(result_dict: Dict, output_path: str | Path) -> None:
 
 def batch_iter(items: List, batch_size: int) -> Iterator[List]:
     for i in range(0, len(items), batch_size):
-        yield items[i: i + batch_size]
+        yield items[i : i + batch_size]

@@ -42,9 +42,7 @@ class SyntheticTrapGenerator:
             random.seed(self.cfg.seed)
             np.random.seed(self.cfg.seed)
 
-    def generate_batch(
-        self, n: int
-    ) -> Tuple[List[np.ndarray], List[Dict]]:
+    def generate_batch(self, n: int) -> Tuple[List[np.ndarray], List[Dict]]:
         """
         Generate n synthetic trap images.
 
@@ -91,8 +89,8 @@ class SyntheticTrapGenerator:
             "height": H,
             "annotations": [
                 {
-                    "bbox": list(bbox),          # [x, y, w, h]
-                    "category_id": 1,            # 1 = SLF adult
+                    "bbox": list(bbox),  # [x, y, w, h]
+                    "category_id": 1,  # 1 = SLF adult
                     "category_name": "slf_adult",
                     "area": bbox[2] * bbox[3],
                     "iscrowd": 0,
@@ -124,7 +122,12 @@ class SyntheticTrapGenerator:
             fname = f"synthetic_{i:05d}.jpg"
             cv2.imwrite(str(img_dir / fname), img, [cv2.IMWRITE_JPEG_QUALITY, 92])
             coco_output["images"].append(
-                {"id": i, "file_name": fname, "width": ann["width"], "height": ann["height"]}
+                {
+                    "id": i,
+                    "file_name": fname,
+                    "width": ann["width"],
+                    "height": ann["height"],
+                }
             )
             for bbox_ann in ann["annotations"]:
                 coco_output["annotations"].append(
@@ -157,7 +160,7 @@ class SyntheticTrapGenerator:
         SLF traps are typically bright yellow or white boards.
         """
         # Base colour: pale yellow (typical commercial SLF trap colour)
-        base_hue = random.randint(20, 35)         # Yellow-orange hue in HSV
+        base_hue = random.randint(20, 35)  # Yellow-orange hue in HSV
         base_sat = random.randint(150, 230)
         base_val = random.randint(180, 240)
 
@@ -233,16 +236,30 @@ class SyntheticTrapGenerator:
         return background, bbox
 
     def _draw_procedural_slf(self) -> np.ndarray:
-        W, H = 120, 60   # Approximate pixel
+        W, H = 120, 60  # Approximate pixel
         img = np.zeros((H, W, 4), dtype=np.uint8)  # BGRA
 
         # --- Forewing (dominant visible surface) ---
         # Base: mottled grey-brown
-        fw_colour = np.array([random.randint(80, 130),  # B
-                               random.randint(80, 120),  # G
-                               random.randint(100, 160), # R
-                               255], dtype=np.uint8)
-        cv2.ellipse(img, (W // 2, H // 2), (W // 2 - 4, H // 2 - 6), 0, 0, 360, fw_colour.tolist(), -1)
+        fw_colour = np.array(
+            [
+                random.randint(80, 130),  # B
+                random.randint(80, 120),  # G
+                random.randint(100, 160),  # R
+                255,
+            ],
+            dtype=np.uint8,
+        )
+        cv2.ellipse(
+            img,
+            (W // 2, H // 2),
+            (W // 2 - 4, H // 2 - 6),
+            0,
+            0,
+            360,
+            fw_colour.tolist(),
+            -1,
+        )
 
         # Black spots on forewings (characteristic pattern)
         n_spots = random.randint(6, 14)
@@ -257,12 +274,20 @@ class SyntheticTrapGenerator:
         if red_visible:
             red_x = random.randint(W // 3, 2 * W // 3)
             cv2.ellipse(
-                img, (red_x, H // 2), (15, 8), 0, 0, 360,
-                (30, 30, 200, 200), -1  # Red in BGR
+                img,
+                (red_x, H // 2),
+                (15, 8),
+                0,
+                0,
+                360,
+                (30, 30, 200, 200),
+                -1,  # Red in BGR
             )
 
         # --- Body outline (darker centre stripe) ---
-        cv2.ellipse(img, (W // 2, H // 2), (8, H // 2 - 4), 0, 0, 360, (30, 30, 40, 255), -1)
+        cv2.ellipse(
+            img, (W // 2, H // 2), (8, H // 2 - 4), 0, 0, 360, (30, 30, 40, 255), -1
+        )
 
         # --- Antennae ---
         ant_len = random.randint(20, 35)
@@ -317,9 +342,9 @@ class SyntheticTrapGenerator:
             occ = occlusion_mask[sy:ey, sx:ex, np.newaxis].astype(np.float32) / 255.0
             alpha = alpha * occ
 
-        region = bg[dy: dy + (ey - sy), dx: dx + (ex - sx)].astype(np.float32)
+        region = bg[dy : dy + (ey - sy), dx : dx + (ex - sx)].astype(np.float32)
         blended = alpha * patch[:, :, :3].astype(np.float32) + (1 - alpha) * region
-        bg[dy: dy + (ey - sy), dx: dx + (ex - sx)] = blended.astype(np.uint8)
+        bg[dy : dy + (ey - sy), dx : dx + (ex - sx)] = blended.astype(np.uint8)
         return bg
 
     @staticmethod
@@ -330,7 +355,7 @@ class SyntheticTrapGenerator:
         occ_y = random.randint(0, h // 2)
         occ_w = random.randint(w // 4, w // 2)
         occ_h = random.randint(h // 4, h // 2)
-        mask[occ_y: occ_y + occ_h, occ_x: occ_x + occ_w] = 0
+        mask[occ_y : occ_y + occ_h, occ_x : occ_x + occ_w] = 0
         return mask
 
     def _add_debris(self, bg: np.ndarray) -> np.ndarray:
@@ -353,7 +378,9 @@ class SyntheticTrapGenerator:
             elif dtype == "blob":
                 cx, cy = random.randint(0, W), random.randint(0, H)
                 rx, ry = random.randint(3, 20), random.randint(3, 12)
-                cv2.ellipse(bg, (cx, cy), (rx, ry), random.uniform(0, 360), 0, 360, colour, -1)
+                cv2.ellipse(
+                    bg, (cx, cy), (rx, ry), random.uniform(0, 360), 0, 360, colour, -1
+                )
             else:
                 pts = np.array(
                     [
@@ -382,10 +409,12 @@ class SyntheticTrapGenerator:
             gradient = np.linspace(1 - strength, 1 + strength, H).reshape(H, 1, 1)
             gradient = np.tile(gradient, (1, W, 3))
         else:
-            cx, cy = random.randint(W // 4, 3 * W // 4), random.randint(H // 4, 3 * H // 4)
+            cx, cy = random.randint(W // 4, 3 * W // 4), random.randint(
+                H // 4, 3 * H // 4
+            )
             Y, X = np.ogrid[:H, :W]
             dist = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
-            max_dist = np.sqrt(H ** 2 + W ** 2) / 2
+            max_dist = np.sqrt(H**2 + W**2) / 2
             gradient = (1 + strength) - (strength * dist / max_dist)
             gradient = gradient[:, :, np.newaxis]
             gradient = np.tile(gradient, (1, 1, 3))
@@ -399,4 +428,6 @@ class SyntheticTrapGenerator:
             img = cv2.imread(str(p), cv2.IMREAD_UNCHANGED)
             if img is not None and img.shape[2] == 4:
                 self.slf_references.append(img)
-        logger.info("Loaded %d SLF reference cutouts from %s", len(self.slf_references), ref_dir)
+        logger.info(
+            "Loaded %d SLF reference cutouts from %s", len(self.slf_references), ref_dir
+        )

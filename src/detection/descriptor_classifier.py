@@ -39,12 +39,12 @@ from sklearn.svm import OneClassSVM
 
 logger = logging.getLogger(__name__)
 
-PATCH_SIZE = (64, 128)   # (W, H) — standard HOG window, portrait orientation
+PATCH_SIZE = (64, 128)  # (W, H) — standard HOG window, portrait orientation
 
 
 @dataclass
 class DescriptorClassifierConfig:
-    mode: str = "one_class_svm"          # one_class_svm | random_forest
+    mode: str = "one_class_svm"  # one_class_svm | random_forest
     patch_size: Tuple[int, int] = (64, 128)
 
     # HOG
@@ -54,8 +54,8 @@ class DescriptorClassifierConfig:
 
     # LBP
     lbp_radius: int = 3
-    lbp_n_points: int = 24              # 8 * radius
-    lbp_n_bins: int = 26                # n_points + 2
+    lbp_n_points: int = 24  # 8 * radius
+    lbp_n_bins: int = 26  # n_points + 2
 
     # HSV histogram
     hsv_h_bins: int = 18
@@ -63,7 +63,7 @@ class DescriptorClassifierConfig:
     hsv_v_bins: int = 8
 
     # One-Class SVM
-    ocsvm_nu: float = 0.15              # Expected fraction of outliers
+    ocsvm_nu: float = 0.15  # Expected fraction of outliers
     ocsvm_kernel: str = "rbf"
     ocsvm_gamma: str = "scale"
 
@@ -72,7 +72,7 @@ class DescriptorClassifierConfig:
     rf_max_depth: int = 12
     rf_class_weight: str = "balanced"
 
-    threshold: float = 0.40             # Minimum score to accept as SLF
+    threshold: float = 0.40  # Minimum score to accept as SLF
 
     # Auto-train from synthetic data if no model is cached
     auto_train_n_synthetic: int = 300
@@ -149,7 +149,9 @@ class DescriptorClassifier:
                 gamma=self.cfg.ocsvm_gamma,
             )
             self._model.fit(X)
-            logger.info("One-Class SVM trained on %d positive patches.", len(pos_patches))
+            logger.info(
+                "One-Class SVM trained on %d positive patches.", len(pos_patches)
+            )
 
         elif self.cfg.mode == "random_forest":
             neg_patches = self._generate_hard_negatives(n)
@@ -171,7 +173,8 @@ class DescriptorClassifier:
             self._model.fit(X_scaled, y)
             logger.info(
                 "Random Forest trained: %d pos / %d neg.",
-                len(pos_features), len(neg_features),
+                len(pos_features),
+                len(neg_features),
             )
         else:
             raise ValueError(f"Unknown mode: {self.cfg.mode}")
@@ -201,19 +204,23 @@ class DescriptorClassifier:
             n_estimators=self.cfg.rf_n_estimators,
             max_depth=self.cfg.rf_max_depth,
             class_weight=self.cfg.rf_class_weight,
-            n_jobs=-1, random_state=42,
+            n_jobs=-1,
+            random_state=42,
         )
         self._model.fit(X_scaled, y)
         self._trained = True
-        logger.info("Supervised RF trained: %d pos / %d neg.", len(all_pos), len(all_neg))
+        logger.info(
+            "Supervised RF trained: %d pos / %d neg.", len(all_pos), len(all_neg)
+        )
         self._maybe_save()
 
     def save(self, path: str | Path) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:
-            pickle.dump({"model": self._model, "scaler": self._scaler,
-                         "mode": self.cfg.mode}, f)
+            pickle.dump(
+                {"model": self._model, "scaler": self._scaler, "mode": self.cfg.mode}, f
+            )
         logger.info("Classifier saved → %s", path)
 
     def load(self, path: str | Path) -> None:
@@ -271,9 +278,15 @@ class DescriptorClassifier:
 
     def _hsv_features(self, patch_bgr: np.ndarray) -> np.ndarray:
         hsv = cv2.cvtColor(patch_bgr, cv2.COLOR_BGR2HSV)
-        h_hist = cv2.calcHist([hsv], [0], None, [self.cfg.hsv_h_bins], [0, 180]).flatten()
-        s_hist = cv2.calcHist([hsv], [1], None, [self.cfg.hsv_s_bins], [0, 256]).flatten()
-        v_hist = cv2.calcHist([hsv], [2], None, [self.cfg.hsv_v_bins], [0, 256]).flatten()
+        h_hist = cv2.calcHist(
+            [hsv], [0], None, [self.cfg.hsv_h_bins], [0, 180]
+        ).flatten()
+        s_hist = cv2.calcHist(
+            [hsv], [1], None, [self.cfg.hsv_s_bins], [0, 256]
+        ).flatten()
+        v_hist = cv2.calcHist(
+            [hsv], [2], None, [self.cfg.hsv_v_bins], [0, 256]
+        ).flatten()
         feat = np.concatenate([h_hist, s_hist, v_hist])
         total = feat.sum() + 1e-8
         return (feat / total).astype(np.float32)
@@ -286,7 +299,9 @@ class DescriptorClassifier:
         """
         gray = cv2.cvtColor(patch_bgr, cv2.COLOR_BGR2GRAY)
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
         if not contours:
             return np.zeros(17, dtype=np.float32)
@@ -318,7 +333,8 @@ class DescriptorClassifier:
         hu_log = -np.sign(hu) * np.log10(np.abs(hu) + 1e-10)
 
         return np.array(
-            [aspect, solidity, extent, eccentricity, area / (64 * 128)] + hu_log.tolist(),
+            [aspect, solidity, extent, eccentricity, area / (64 * 128)]
+            + hu_log.tolist(),
             dtype=np.float32,
         )
 
@@ -347,13 +363,19 @@ class DescriptorClassifier:
 
     def _generate_synthetic_patches(self, n: int) -> List[np.ndarray]:
         """Generate synthetic SLF-like patches for OC-SVM / RF training."""
-        from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
+        from src.augmentation.synthetic_generator import (
+            SyntheticTrapGenerator,
+            SyntheticConfig,
+        )
+
         rng = np.random.default_rng(0)
-        gen = SyntheticTrapGenerator(SyntheticConfig(
-            image_size=(512, 512),
-            insects_per_image_range=(4, 10),
-            seed=0,
-        ))
+        gen = SyntheticTrapGenerator(
+            SyntheticConfig(
+                image_size=(512, 512),
+                insects_per_image_range=(4, 10),
+                seed=0,
+            )
+        )
         patches = []
         images_needed = max(1, n // 6)
         for i in range(images_needed):
@@ -362,8 +384,10 @@ class DescriptorClassifier:
                 x, y, w, h = [int(v) for v in bbox_ann["bbox"]]
                 # Expand bbox slightly for context
                 pad = 8
-                x1 = max(0, x - pad); y1 = max(0, y - pad)
-                x2 = min(512, x + w + pad); y2 = min(512, y + h + pad)
+                x1 = max(0, x - pad)
+                y1 = max(0, y - pad)
+                x2 = min(512, x + w + pad)
+                y2 = min(512, y + h + pad)
                 crop = img[y1:y2, x1:x2]
                 if crop.size > 0:
                     patches.append(crop)
@@ -435,8 +459,9 @@ class DescriptorClassifier:
                 ry = rng.integers(3, 10)
                 angle = rng.uniform(0, 180)
                 col = tuple(rng.integers(50, 120, size=3).tolist())
-                cv2.ellipse(p, (int(cx), int(cy)), (int(rx), int(ry)),
-                            angle, 0, 360, col, -1)
+                cv2.ellipse(
+                    p, (int(cx), int(cy)), (int(rx), int(ry)), angle, 0, 360, col, -1
+                )
 
             # Crop to patch size
             patches.append(cv2.resize(p, (W, H)))

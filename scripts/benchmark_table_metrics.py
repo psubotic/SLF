@@ -27,7 +27,10 @@ from src.augmentation.synthetic_generator import SyntheticTrapGenerator, Synthet
 from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
-from src.detection.descriptor_classifier import DescriptorClassifier, DescriptorClassifierConfig
+from src.detection.descriptor_classifier import (
+    DescriptorClassifier,
+    DescriptorClassifierConfig,
+)
 
 logging.getLogger().setLevel(logging.WARNING)
 
@@ -64,6 +67,7 @@ IOU_THRESHOLD = 0.3
 # Helper functions
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def iou(box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, int]) -> float:
     x1, y1, w1, h1 = box1
     x2, y2, w2, h2 = box2
@@ -87,8 +91,9 @@ def iou(box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, int]) -> flo
     return intersection / union if union > 0 else 0.0
 
 
-def evaluate_detections(detections: List, ground_truth: List[Dict],
-                       threshold: float = 0.5) -> Tuple[int, int, int]:
+def evaluate_detections(
+    detections: List, ground_truth: List[Dict], threshold: float = 0.5
+) -> Tuple[int, int, int]:
     gt_boxes = [ann["bbox"] for ann in ground_truth]
     gt_matched = [False] * len(gt_boxes)
 
@@ -96,7 +101,7 @@ def evaluate_detections(detections: List, ground_truth: List[Dict],
 
     # Count TP and FP
     for det in detections:
-        if hasattr(det, 'label') and hasattr(det, 'final_score'):
+        if hasattr(det, "label") and hasattr(det, "final_score"):
             # Detection object (Stage 3b)
             if det.final_score >= threshold and det.label == 1:
                 matched = False
@@ -133,7 +138,11 @@ def compute_metrics(tp: int, fp: int, fn: int) -> Dict[str, float]:
     """Compute precision, recall, and F1 from confusion matrix components."""
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
 
     return {
         "precision": precision,
@@ -141,8 +150,9 @@ def compute_metrics(tp: int, fp: int, fn: int) -> Dict[str, float]:
         "f1": f1,
         "tp": tp,
         "fp": fp,
-        "fn": fn
+        "fn": fn,
     }
+
 
 def main():
     print("=" * 70)
@@ -160,15 +170,11 @@ def main():
 
     print("Initializing pipeline components...")
 
-    preprocessor = TrapImagePreprocessor(
-        PreprocessorConfig(target_size=IMAGE_SIZE)
-    )
+    preprocessor = TrapImagePreprocessor(PreprocessorConfig(target_size=IMAGE_SIZE))
 
     proposer = RegionProposer(
         RegionProposerConfig(
-            min_area_px=MIN_AREA_PX,
-            max_area_px=MAX_AREA_PX,
-            nms_iou_threshold=NMS_IOU
+            min_area_px=MIN_AREA_PX, max_area_px=MAX_AREA_PX, nms_iou_threshold=NMS_IOU
         )
     )
 
@@ -176,17 +182,14 @@ def main():
         FeatureFilterConfig(
             min_score=HEURISTIC_MIN_SCORE,
             min_aspect_ratio=HEURISTIC_ASPECT_RATIO_MIN,
-            min_color_fraction=HEURISTIC_COLOR_FRACTION_MIN
+            min_color_fraction=HEURISTIC_COLOR_FRACTION_MIN,
         )
     )
 
     print("Generating test dataset...")
 
     test_gen = SyntheticTrapGenerator(
-        SyntheticConfig(
-            insects_per_image_range=TEST_INSECTS_PER_IMAGE,
-            seed=TEST_SEED
-        )
+        SyntheticConfig(insects_per_image_range=TEST_INSECTS_PER_IMAGE, seed=TEST_SEED)
     )
 
     test_images = []
@@ -215,9 +218,7 @@ def main():
 
         # Evaluate against ground truth
         tp, fp, fn = evaluate_detections(
-            filtered,
-            ann["annotations"],
-            threshold=HEURISTIC_MIN_SCORE
+            filtered, ann["annotations"], threshold=HEURISTIC_MIN_SCORE
         )
         heuristic_tp += tp
         heuristic_fp += fp
@@ -234,8 +235,7 @@ def main():
 
     train_gen = SyntheticTrapGenerator(
         SyntheticConfig(
-            insects_per_image_range=TRAINING_INSECTS_PER_IMAGE,
-            seed=TRAINING_SEED
+            insects_per_image_range=TRAINING_INSECTS_PER_IMAGE, seed=TRAINING_SEED
         )
     )
 
@@ -253,7 +253,7 @@ def main():
         H, W = processed.shape[:2]
         for proposal in filtered:
             x, y, w, h = proposal.bbox
-            crop = processed[max(0, y):min(H, y + h), max(0, x):min(W, x + w)]
+            crop = processed[max(0, y) : min(H, y + h), max(0, x) : min(W, x + w)]
             if crop.size == 0:
                 continue
 
@@ -263,7 +263,9 @@ def main():
             elif best_iou < 0.1:
                 neg_patches.append(crop)
 
-    print(f"  Collected {len(pos_patches)} positive, {len(neg_patches)} negative patches")
+    print(
+        f"  Collected {len(pos_patches)} positive, {len(neg_patches)} negative patches"
+    )
 
     t0 = time.time()
     classifier = DescriptorClassifier(
@@ -272,7 +274,7 @@ def main():
             threshold=RF_THRESHOLD,
             rf_n_estimators=RF_N_ESTIMATORS,
             rf_max_depth=RF_MAX_DEPTH,
-            model_cache_path=None  # Don't cache during benchmark
+            model_cache_path=None,  # Don't cache during benchmark
         )
     )
 
@@ -296,42 +298,50 @@ def main():
         patches = []
         for proposal in filtered:
             x, y, w, h = proposal.bbox
-            crop = processed[max(0, y):min(H, y + h), max(0, x):min(W, x + w)]
-            patches.append(crop if crop.size > 0 else np.zeros((32, 32, 3), dtype=np.uint8))
+            crop = processed[max(0, y) : min(H, y + h), max(0, x) : min(W, x + w)]
+            patches.append(
+                crop if crop.size > 0 else np.zeros((32, 32, 3), dtype=np.uint8)
+            )
 
         if patches:
             scores = classifier.score_batch(patches)
 
             detections = []
             for proposal, score in zip(filtered, scores):
-                detection = type('Detection', (), {
-                    'bbox': proposal.bbox,
-                    'final_score': score,
-                    'label': int(score >= RF_THRESHOLD)
-                })()
+                detection = type(
+                    "Detection",
+                    (),
+                    {
+                        "bbox": proposal.bbox,
+                        "final_score": score,
+                        "label": int(score >= RF_THRESHOLD),
+                    },
+                )()
                 detections.append(detection)
         else:
             detections = []
 
         tp, fp, fn = evaluate_detections(
-            detections,
-            ann["annotations"],
-            threshold=RF_THRESHOLD
+            detections, ann["annotations"], threshold=RF_THRESHOLD
         )
         rf_tp += tp
         rf_fp += fp
         rf_fn += fn
 
         gt_count = len(ann["annotations"])
-        det_count = sum(1 for d in detections if d.final_score >= RF_THRESHOLD and d.label == 1)
-        detailed_results.append({
-            "image_id": i,
-            "gt_count": gt_count,
-            "detected_count": det_count,
-            "tp": tp,
-            "fp": fp,
-            "fn": fn
-        })
+        det_count = sum(
+            1 for d in detections if d.final_score >= RF_THRESHOLD and d.label == 1
+        )
+        detailed_results.append(
+            {
+                "image_id": i,
+                "gt_count": gt_count,
+                "detected_count": det_count,
+                "tp": tp,
+                "fp": fp,
+                "fn": fn,
+            }
+        )
 
     rf_time = time.time() - t0
     rf_metrics = compute_metrics(rf_tp, rf_fp, rf_fn)
@@ -346,7 +356,9 @@ def main():
     print()
     print(f"{'Metric':<20} {'Heuristic-only':<18} {'HOG+LBP+RF':<15}")
     print("-" * 60)
-    print(f"{'Precision':<20} {heuristic_metrics['precision']:<18.1%} {rf_metrics['precision']:<15.1%}")
+    print(
+        f"{'Precision':<20} {heuristic_metrics['precision']:<18.1%} {rf_metrics['precision']:<15.1%}"
+    )
     print(f"{'Recall':<20} {'—':<18} {rf_metrics['recall']:<15.1%}")
     print(f"{'F1':<20} {'—':<18} {rf_metrics['f1']:<15.1%}")
     print(f"{'GPU required':<20} {'No':<18} {'No':<15}")
@@ -360,9 +372,11 @@ def main():
     print(f"{'Image':<6} {'GT':<4} {'Det':<5} {'TP':<4} {'FP':<4} {'FN':<4}")
     print("-" * 35)
     for result in detailed_results[:10]:  # Show first 10
-        print(f"{result['image_id']:<6} {result['gt_count']:<4} "
-              f"{result['detected_count']:<5} {result['tp']:<4} "
-              f"{result['fp']:<4} {result['fn']:<4}")
+        print(
+            f"{result['image_id']:<6} {result['gt_count']:<4} "
+            f"{result['detected_count']:<5} {result['tp']:<4} "
+            f"{result['fp']:<4} {result['fn']:<4}"
+        )
     if len(detailed_results) > 10:
         print(f"... ({len(detailed_results) - 10} more images)")
     print()
@@ -379,16 +393,16 @@ def main():
         },
         "heuristic_baseline": {
             **heuristic_metrics,
-            "evaluation_time_sec": heuristic_time
+            "evaluation_time_sec": heuristic_time,
         },
         "hog_lbp_rf": {
             **rf_metrics,
             "training_time_sec": train_time,
             "evaluation_time_sec": rf_time,
             "training_patches_pos": len(pos_patches),
-            "training_patches_neg": len(neg_patches)
+            "training_patches_neg": len(neg_patches),
         },
-        "per_image_results": detailed_results
+        "per_image_results": detailed_results,
     }
 
     output_path = Path("benchmark_results.json")

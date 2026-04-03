@@ -18,10 +18,14 @@ import numpy as np
 
 # Ensure src/ is in Python path for local imports
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.augmentation.synthetic_generator import SyntheticTrapGenerator, SyntheticConfig
-from src.detection.descriptor_classifier import DescriptorClassifier, DescriptorClassifierConfig
+from src.detection.descriptor_classifier import (
+    DescriptorClassifier,
+    DescriptorClassifierConfig,
+)
 from src.detection.preprocessor import TrapImagePreprocessor, PreprocessorConfig
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
@@ -97,7 +101,9 @@ def run_synthetic_demo(output_dir: Path) -> None:
     with open(output_dir / "ground_truth.json", "w") as f:
         json.dump(annotation, f, indent=2)
 
-    logger.info("Generated synthetic image with %d SLF adults", len(annotation["annotations"]))
+    logger.info(
+        "Generated synthetic image with %d SLF adults", len(annotation["annotations"])
+    )
     logger.info("Saved input image → %s", input_path)
 
     # Build pipeline and run detection
@@ -157,13 +163,15 @@ def run_image_demo(image_path: Path, output_dir: Path) -> None:
     print(f"Processing time:         {result_dict['elapsed_sec']:.2f}s")
     print(f"Total detections:        {len(result_dict['detections'])}")
     print()
-    if result_dict['detections']:
+    if result_dict["detections"]:
         print("Detection details:")
-        for i, det in enumerate(result_dict['detections']):
-            print(f"  [{i+1}] bbox={det['bbox_xywh']}, "
-                  f"heuristic={det['heuristic_score']:.3f}, "
-                  f"classifier={det['classifier_score']:.3f}, "
-                  f"label={'SLF' if det['label'] else 'negative'}")
+        for i, det in enumerate(result_dict["detections"]):
+            print(
+                f"  [{i+1}] bbox={det['bbox_xywh']}, "
+                f"heuristic={det['heuristic_score']:.3f}, "
+                f"classifier={det['classifier_score']:.3f}, "
+                f"label={'SLF' if det['label'] else 'negative'}"
+            )
 
 
 def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
@@ -171,7 +179,8 @@ def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
 
     image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif"}
     image_paths = [
-        p for p in input_dir.rglob("*")
+        p
+        for p in input_dir.rglob("*")
         if p.is_file() and p.suffix.lower() in image_exts
     ]
 
@@ -196,14 +205,16 @@ def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
                 image,
                 pipeline,
                 output_dir / f"result_{image_path.stem}.jpg",
-                image_path.stem
+                image_path.stem,
             )
-            results_summary.append({
-                "filename": image_path.name,
-                "slf_count": result_dict["slf_count"],
-                "elapsed_sec": result_dict["elapsed_sec"],
-                "total_detections": len(result_dict["detections"]),
-            })
+            results_summary.append(
+                {
+                    "filename": image_path.name,
+                    "slf_count": result_dict["slf_count"],
+                    "elapsed_sec": result_dict["elapsed_sec"],
+                    "total_detections": len(result_dict["detections"]),
+                }
+            )
         except Exception as e:
             logger.error("Failed to process %s: %s", image_path.name, e)
 
@@ -224,16 +235,33 @@ def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="SLF Detection Demo")
-    parser.add_argument("--mode", choices=["synthetic", "image", "batch"], required=True,
-                        help="Demo mode to run")
+    parser.add_argument(
+        "--mode",
+        choices=["synthetic", "image", "batch"],
+        required=True,
+        help="Demo mode to run",
+    )
     parser.add_argument("--image", type=Path, help="Input image path (for image mode)")
-    parser.add_argument("--input-dir", type=Path, help="Input directory (for batch mode)")
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/demo"),
-                        help="Output directory (default: outputs/demo)")
-    parser.add_argument("--config", type=Path, default="configs/default.yaml",
-                        help="Pipeline config file")
-    parser.add_argument("--proposals", action="store_true",
-                        help="Show region proposals in output visualization")
+    parser.add_argument(
+        "--input-dir", type=Path, help="Input directory (for batch mode)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("outputs/demo"),
+        help="Output directory (default: outputs/demo)",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default="configs/default.yaml",
+        help="Pipeline config file",
+    )
+    parser.add_argument(
+        "--proposals",
+        action="store_true",
+        help="Show region proposals in output visualization",
+    )
 
     args = parser.parse_args()
 

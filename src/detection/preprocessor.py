@@ -88,5 +88,5 @@ class TrapImagePreprocessor:
 
 @dataclass
 class PreprocessResult:
-    image: np.ndarray           # Processed BGR image
-    glare_mask: np.ndarray      # Binary glare mask (uint8, 255=glare)
+    image: np.ndarray  # Processed BGR image
+    glare_mask: np.ndarray  # Binary glare mask (uint8, 255=glare)

@@ -46,7 +46,7 @@ class FeatureFilterConfig:
     min_solidity: float = 0.25
     max_solidity: float = 0.98
     min_color_fraction: float = 0.06
-    min_score: float = 0.15   # Proposals below this are discarded
+    min_score: float = 0.15  # Proposals below this are discarded
 
     def __post_init__(self):
         if self.hsv_ranges is None:
@@ -170,12 +170,14 @@ class FeatureFilter:
         # Peak around 2.0 (typical SLF resting aspect ratio)
         optimal = 2.0
         spread = (hi - lo) / 2.0
-        return float(np.exp(-((aspect - optimal) ** 2) / (2 * spread ** 2)))
+        return float(np.exp(-((aspect - optimal) ** 2) / (2 * spread**2)))
 
     def _solidity_score(self, crop_bgr: np.ndarray) -> float:
         gray = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2GRAY)
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
         if not contours:
             return 0.0
         largest = max(contours, key=cv2.contourArea)

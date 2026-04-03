@@ -11,7 +11,10 @@ sys.path.insert(0, str(project_root))
 
 # Direct import to bypass __init__.py issues
 try:
-    from src.detection.descriptor_classifier import DescriptorClassifier, DescriptorClassifierConfig
+    from src.detection.descriptor_classifier import (
+        DescriptorClassifier,
+        DescriptorClassifierConfig,
+    )
 except ImportError:
     pytest.skip("DescriptorClassifier module not available", allow_module_level=True)
 
@@ -30,7 +33,7 @@ class TestDescriptorClassifierConfig:
             mode="random_forest",
             patch_size=(32, 64),
             threshold=0.5,
-            auto_train_n_synthetic=100
+            auto_train_n_synthetic=100,
         )
         assert config.mode == "random_forest"
         assert config.patch_size == (32, 64)
@@ -74,7 +77,7 @@ class TestDescriptorClassifier:
         """Create a test config with faster settings."""
         return DescriptorClassifierConfig(
             auto_train_n_synthetic=20,  # Much smaller for fast tests
-            model_cache_path=None,      # Don't cache during tests
+            model_cache_path=None,  # Don't cache during tests
         )
 
     @pytest.fixture
@@ -103,7 +106,7 @@ class TestDescriptorClassifier:
         patch = np.full((128, 64, 3), [60, 100, 140], dtype=np.uint8)  # Red-brown base
         # Add some darker regions (body/wings)
         patch[30:100, 20:44] = [40, 60, 80]  # Central body
-        patch[40:80, 10:54] = [50, 80, 120]   # Wing area
+        patch[40:80, 10:54] = [50, 80, 120]  # Wing area
         return patch
 
     @pytest.fixture
@@ -172,7 +175,7 @@ class TestDescriptorClassifier:
         config = DescriptorClassifierConfig(
             mode="one_class_svm",
             auto_train_n_synthetic=10,  # Very small for speed
-            model_cache_path=None
+            model_cache_path=None,
         )
         classifier = DescriptorClassifier(config)
 
@@ -193,7 +196,9 @@ class TestDescriptorClassifier:
         assert rf_classifier._scaler is not None
         assert rf_classifier.cfg.mode == "random_forest"
 
-    def test_train_from_synthetic_with_extra_negatives(self, rf_classifier, yellow_patch):
+    def test_train_from_synthetic_with_extra_negatives(
+        self, rf_classifier, yellow_patch
+    ):
         """Test training with extra negative examples."""
         extra_negatives = [yellow_patch]
         rf_classifier.train_from_synthetic(n=8, extra_negatives=extra_negatives)
@@ -231,9 +236,11 @@ class TestDescriptorClassifier:
 
         # Test HSV features
         hsv_features = classifier._hsv_features(sample_patch)
-        expected_hsv_len = (classifier.cfg.hsv_h_bins +
-                           classifier.cfg.hsv_s_bins +
-                           classifier.cfg.hsv_v_bins)
+        expected_hsv_len = (
+            classifier.cfg.hsv_h_bins
+            + classifier.cfg.hsv_s_bins
+            + classifier.cfg.hsv_v_bins
+        )
         assert len(hsv_features) == expected_hsv_len
 
         # Test shape features
@@ -317,4 +324,3 @@ class TestDescriptorClassifier:
         assert isinstance(shape_features, np.ndarray)
         # Most features should be 0 since no contours found
         assert np.allclose(shape_features, 0.0, atol=1e-6)
-
