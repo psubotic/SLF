@@ -215,12 +215,14 @@ We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pip
 Below we expand on each stage.
 
 \subsection{Pre-processing}
-The preprocessing stage (Stage 1) normalizes raw trap 
+The preprocessing stage (Stage 1) normalizes raw 
 images to ensure consistent input for the detection pipeline, regardless of varying field photography conditions. First we 
-use the \emph{CLAHE Enhancement} to remove uneven 
-lighting (bright spots, shadows, overcast vs sunny). CLAHE divides image into 8×8 grid tiles, and equalizes histogram in each tile separately. This makes local contrast consistent across the image, 
+use the \emph{CLAHE Enhancement}~\cite{clahe} to remove uneven 
+lighting (bright spots, shadows, overcast vs sunny). CLAHE divides image into 8×8 grid tiles, and equalizes histogram in 
+each tile separately. This makes local contrast consistent across the image, 
 regardless of global lighting. Next, we employ \emph{glare removal}. We find pixels brighter than 97\% of the image and use surrounding 
-pixel colors to "paint over" the glare spots. This eliminates false edges that would confuse the region proposer. Lastly, we resize to standard resolution. Since field photos may vary 
+pixel colors to "paint over" the glare spots. This eliminates false edges that would confuse the region proposer. Lastly, we resize to 
+standard resolution. Since field photos may vary 
 wildly (e.g., 480×640, 1920×1080, 4032×3024, etc.), we standardize them to 1024×1024 for consistent processing. Thus 
 all downstream size thresholds have consistent meaning. This ensures that the same insect photographed under different 
 conditions produces similar-looking input to the detection stages, making the pipeline robust across varying field conditions.The 
@@ -234,35 +236,38 @@ preprocessing is deterministic and fast (<100ms on CPU), making it suitable for 
 \end{figure}
 
 \begin{example}
-Consider the images in Figure~\ref{fig:stage1}. The original image is on the top left and the transformed image on the bottom left and top and bottom right. Note that the insects on the trap become visually more proponent after each transformation.
+Consider the images in Figure~\ref{fig:stage1}. The original image is on the top-left and the transformed image on 
+the bottom-left and top-and-bottom-right. Note that the insects on the trap become visually more proponent after 
+each transformation.
 \end{example}
 
 \subsection{Region Proposal}
-The region proposal stage serves as the critical bridge between processing the entire image and focusing computational 
-resources on specific areas that might contain insects. Without this stage, the detection pipeline would face an intractable 
-search problem: examining every possible location and scale within a 1024×1024 image would require evaluating millions of 
-potential bounding boxes, making real-time detection impossible.
+The region proposal stage (Stage2) serves as the critical bridge between processing the entire image and focusing computational 
+resources on specific areas that \emph{might} contain insects. Without this stage, the detection pipeline would face an intractable 
+search problem: examining every possible location and scale within a 1024x1024 image would require evaluating millions of 
+potential bounding boxes, making real-time or even efficient detection impossible.
 
 The fundamental challenge is that insects represent a tiny fraction of the total image area. A typical trap photograph shows 
 mostly yellow sticky board background, with perhaps three to six small insects scattered across the surface. Rather than running 
 the expensive descriptor classifier on every possible rectangular region, the proposal stage uses fast classical computer vision 
 techniques to identify a manageable number of candidate locations that warrant closer examination.
 
-The implementation combines two complementary detection methods to ensure comprehensive coverage. MSER 
-(Maximally Stable Extremal Regions) excels at finding compact, blob-like structures that remain consistent across 
-multiple intensity thresholds. This technique is particularly effective at detecting insect bodies, which typically 
+The implementation combines two complementary detection methods to ensure comprehensive coverage. 
+Maximally Stable Extremal Regions (MSER)~\cite{mser} excels at finding compact, blob-like structures that remain consistent across 
+multiple intensity thresholds. This technique is particularly effective at detecting insect bodies~\cite{insects}, which typically 
 appear as coherent dark or light regions against the trap background. MSER works by progressively thresholding the image 
 at different intensity levels and identifying regions that persist across multiple thresholds, indicating stable, 
 well-defined objects rather than noise or texture variations.
 
-The second method employs Canny edge detection followed by contour analysis to capture objects defined by strong boundaries rather 
-than uniform intensity. This approach complements MSER by detecting insects with prominent wing edges or clear silhouettes that might 
-not register as stable intensity regions. Wing outlines, body contours, and other edge-defined features that MSER might miss are 
-captured through this boundary-based approach.
+The second method employs Canny edge detection~\cite{canny} followed by contour analysis to capture objects defined by strong 
+boundaries rather than uniform intensity. This approach complements MSER by detecting insects with prominent wing edges or clear 
+silhouettes that might not register as stable intensity regions. Wing outlines, body contours, and other edge-defined features that 
+MSER might miss are captured through this boundary-based approach.
 
 Both methods produce initial candidate regions that undergo size filtering to eliminate obviously incorrect detections. Regions 
 smaller than 300 square pixels likely represent noise, debris fragments, or imaging artifacts, while regions larger than 18,000 square 
-pixels probably encompass multiple objects or large background areas rather than individual insects. These size thresholds correspond roughly to 3-30 millimeter objects at typical trap photography distances.
+pixels probably encompass multiple objects or large background areas rather than individual insects. These size thresholds correspond 
+roughly to 3-30 millimeter objects at typical trap photography distances.
 
 The candidates from both detection methods are then merged and processed through non-maximum suppression using intersection-over-union 
 scoring. This step eliminates duplicate detections where MSER and Canny contours have identified overlapping regions of the same object, ensuring that each potential insect is represented by a single bounding box rather than multiple overlapping proposals.
@@ -270,7 +275,8 @@ scoring. This step eliminates duplicate detections where MSER and Canny contours
 The output of this stage is typically 15-50 bounding boxes per image, representing a dramatic reduction from the millions of possible locations while maintaining high confidence that genuine insects have been captured. The region proposer achieves very high recall, meaning it rarely misses actual insects, though it also generates false positives that represent debris, shadows, or other non-insect features. This high-recall, moderate-precision trade-off is appropriate for a proposal stage since downstream processing will refine the candidate list.
 The computational efficiency gained through region proposal is substantial. Instead of requiring the descriptor classifier to 
 extract HOG and LBP features from thousands of sliding window positions across multiple scales, the pipeline only needs to process 
-a few dozen carefully selected candidates. This focus enables real-time processing on CPU-only hardware while ensuring that the subsequent classification stages receive a manageable and well-curated set of potential targets for detailed analysis.
+a few dozen carefully selected candidates. This focus enables real-time processing on CPU-only hardware while ensuring that the subsequent classification stages receive a manageable and well-curated set of potential targets for detailed analysis. The stage is illustrated in 
+Figure~\ref{fig:region_proposal}.
 
 \begin{figure}[htbp]
 \centering
@@ -279,8 +285,6 @@ a few dozen carefully selected candidates. This focus enables real-time processi
 
 % Input image
 \node[draw, rectangle, fill=green!20, minimum width=2.5cm, minimum height=2cm, align=center] (input) at (0,0) {Enhanced Image\\1024x1024x3};
-
-
 
 % MSER step
 \node[draw, rectangle, fill=blue!20, minimum width=2cm, minimum height=1cm, align=center] (mser) at (4,1.5) {MSER\\Detection};
@@ -308,8 +312,6 @@ a few dozen carefully selected candidates. This focus enables real-time processi
 % Final output
 \node[draw, rectangle, fill=cyan!20, minimum width=2.5cm, minimum height=1.5cm, align=center] (output) at (18,0) {Candidate Regions};
 
-
-
 % Arrows
 \draw[->, thick] (input.east) -- (2.5,1.5) -- (mser.west);
 \draw[->, thick] (input.east) -- (2.5,-1.5) -- (canny.west);
@@ -323,7 +325,6 @@ a few dozen carefully selected candidates. This focus enables real-time processi
 \draw[->, thick] (combine.east) -- (nms.west);
 \draw[->, thick] (nms.east) -- (output.west);
 
-% Step descriptions
 \node[font=\tiny, align=center] at (4,2.5) {Finds dark\\blobs on\\bright background};
 
 \node[font=\tiny, align=center] at (4,-2.5) {Detects object\\boundaries and\\edges};
@@ -332,13 +333,10 @@ a few dozen carefully selected candidates. This focus enables real-time processi
 
 \node[font=\tiny, align=center] at (14.5,-1) {Remove duplicate\\detections of\\same object};
 
-% Counts
 \node[font=\scriptsize, text=blue] at (8,2.2) {About 200};
 \node[font=\scriptsize, text=blue] at (8,-0.8) {About 150};
 \node[font=\scriptsize, text=blue] at (11,1) {About 100};
 \node[font=\scriptsize, text=blue] at (14.5,1) {About 50};
-
-% Title
 \node[font=\Large] at (9,3.5) {Region Proposal Stage};
 
 \end{tikzpicture}
@@ -349,26 +347,41 @@ a few dozen carefully selected candidates. This focus enables real-time processi
 
 
 \begin{example}
-Consider Figure~\ref{fig:stage2}    
+Consider Figure~\ref{fig:stage2}, the stage 2 transformation reduces the number of candidates starting at 6796 and ending at 3275. This 
+accounts for a >56\% reduction.
 \end{example}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\linewidth]{images/stage2.png}
-    \caption{Stage 2 Changes}
+    \caption{Stage 2 transformations for our example image}
     \label{fig:stage2}
 \end{figure}
 
 
-
-
 \subsection{Heuristic Filter}
-The heuristic filter stage (Stage 3a) serves as a fast, rule-based pre-screening step that evaluates candidate regions using expert knowledge about Spotted Lanternfly appearance. This stage receives the bounding boxes identified by the region proposer and applies three simple tests to determine which candidates are worth passing to the computationally expensive descriptor classifier.
-The first test examines color compatibility by converting each candidate patch to HSV color space and counting how many pixels fall within the known color ranges for SLF adults. Since SLF forewings are typically red-brown and their bodies are greyish, the filter looks for patches containing a meaningful proportion of pixels in these hue ranges. Patches that are mostly bright yellow trap board background or dark shadows receive low scores, while patches with substantial reddish-brown or grey content score higher.
-The second evaluation focuses on shape through aspect ratio analysis. Adult SLF at rest have their wings folded and appear wider than they are tall, typically with width-to-height ratios between 1.2 and 5.0. The filter gives perfect scores to candidates within this range and zero scores to regions that are too square or too elongated, as these shapes are inconsistent with SLF morphology.
-The third assessment measures solidity, which quantifies how compact and filled a region appears by comparing the actual contour area to its convex hull area. SLF adults present as solid, coherent shapes, whereas common debris like twigs, leaf fragments, or plant material tends to be spindly and fragmented. The filter favors candidates with high solidity scores that suggest a compact insect body rather than irregular debris.
-These three scores are combined into a single confidence measure, and only candidates exceeding a minimum threshold are passed forward to the descriptor classifier. This filtering approach is called heuristic because it relies on hand-crafted rules derived from domain expertise rather than learned patterns from data. The thresholds and color ranges were determined through manual inspection of SLF reference images and iterative testing on synthetic trap images.
-The heuristic filter achieves very high recall at the cost of modest precision, meaning it successfully identifies nearly all actual SLF while also passing through many false candidates. This trade-off is intentional since the primary goal is computational efficiency rather than final accuracy. By eliminating obviously incorrect candidates in microseconds per region, the filter reduces the workload for the downstream classifier from typically 50-80 candidates per image down to 15-20 promising regions. This preprocessing step makes the overall pipeline several times faster while ensuring that genuine insects are rarely discarded prematurely.
+The heuristic filter stage (Stage 3a) serves as a fast, rule-based pre-screening step that evaluates candidate regions using 
+apriori external knowledge about SLF appearance. This stage receives the bounding boxes identified by the region proposer and 
+applies three simple tests to determine which candidates are worth passing to the computationally expensive descriptor classifier.
+The first test examines color compatibility by converting each candidate patch to HSV color space and counting how many pixels fall 
+within the known color ranges for SLF adults. Since SLF forewings are typically red-brown and their bodies are greyish, the filter 
+looks for patches containing a meaningful proportion of pixels in these hue ranges. Patches that are mostly bright yellow trap board 
+background or dark shadows receive low scores, while patches with substantial reddish-brown or grey content score higher.
+The second evaluation focuses on shape through aspect ratio analysis. Adult SLF at rest have their wings folded and appear wider than 
+they are tall, typically with width-to-height ratios between 1.2 and 5.0. The filter gives perfect scores to candidates within this range 
+and zero scores to regions that are too square or too elongated, as these shapes are inconsistent with SLF morphology.
+The third assessment measures solidity, which quantifies how compact and filled a region appears by comparing the actual contour area to 
+its convex hull area. SLF adults present as solid, coherent shapes, whereas common debris like twigs, leaf fragments, or plant material 
+tends to be spindly and fragmented. The filter favors candidates with high solidity scores that suggest a compact insect body rather than 
+irregular debris.
+
+These three scores are combined into a single confidence measure, and only candidates exceeding a minimum threshold are passed forward to the descriptor classifier. This filtering approach is called heuristic because it relies on hand-crafted rules derived from domain expertise rather than learned patterns from data. The thresholds and color ranges were determined through manual inspection of SLF reference images and iterative testing on synthetic trap images. This process is illustrated
+in Figure~\ref{fig:heuristic_filter}.
+
+The heuristic filter achieves very high recall at the cost of modest precision, meaning it successfully identifies nearly all actual 
+SLF while also passing through many false candidates. This trade-off is intentional since the primary goal is computational efficiency 
+rather than final accuracy. By eliminating obviously incorrect candidates in microseconds per region, the filter reduces the workload for 
+the downstream classifier from typically 50-80 candidates per image down to 15-20 promising regions. This preprocessing step makes the overall pipeline several times faster while ensuring that genuine insects are rarely discarded prematurely.
 
 \begin{figure}
 \resizebox{0.9\textwidth}{!}{
@@ -460,16 +473,15 @@ The heuristic filter achieves very high recall at the cost of modest precision, 
 
 
 \begin{example}
-Consider Figure~\ref{fig:stage3a}    
+    Consider Figure~\ref{fig:stage3a}, the heuristic transformation removes 38 candidates (from 380 to 342). 
 \end{example}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\linewidth]{images/stage3a.png}
-    \caption{Stage 3a Changes}
+    \caption{Stage 3a transformation on example trap image. There is a reduction in candidates from 380 to 342.}
     \label{fig:stage3a}
 \end{figure}
-
 
 
 \subsection{Descriptor classifier: HOG + LBP + RF}
@@ -492,17 +504,9 @@ ${\sim}600$-dimensional feature vector.
 Features are normalised with \code{StandardScaler} and classified by a
 \textbf{Random Forest} (200 trees, balanced class weights, max depth 12).
 
-This combination was common in computer vision applications circa 2005--2015,
-before deep learning became dominant. Modern insect detection systems typically
-use end-to-end CNN architectures \cite{saleem2019plant}, but require
-substantially more labeled training data (thousands vs.\ hundreds of examples)
-and GPU infrastructure for practical deployment.
+Instead of needing humans to manually draw bounding boxes around real SLF in real trap photos, the system generates its own training data through the synthetic image generator.The synthetic generator procedurally creates fake trap images by rendering SLF-like shapes on simulated trap board backgrounds. Since these images are generated by code, the system automatically knows exactly where each synthetic insect is located - it has perfect ground truth "for free" because it placed the insects there in the first place.
 
-Instead of needing humans to manually draw bounding boxes around real SLF in real trap photos, the system generates its own training data through the synthetic image generator.
-
-
-The synthetic generator procedurally creates fake trap images by rendering SLF-like shapes on simulated trap board backgrounds. Since these images are generated by code, the system automatically knows exactly where each synthetic insect is located - it has perfect ground truth "for free" because it placed the insects there in the first place.
-When the synthetic generator creates an image with three SLF adults at coordinates (150,200), (400,350), and (800,450), those locations become the ground truth labels. No human annotation is required because the algorithm that created the image also records exactly what it created and where.
+When the synthetic generator creates an image with three SLF adults e.g., at coordinates (150,200), (400,350), and (800,450), those locations become the ground truth labels. No human annotation is required because the algorithm that created the image also records exactly what it created and where.
 The classifier training then works by running the region proposer and heuristic filter on these synthetic images, extracting proposal crops, and labeling them based on how well they overlap with the known synthetic insect locations. Crops that overlap significantly with a known synthetic insect become positive training examples, while crops that don't overlap become negative examples.
 
 
@@ -516,13 +520,14 @@ matches exactly what the region proposer produces at inference time.
 
 
 \begin{example}
-Consider Figure~\ref{fig:stage3b}  
+Consider Figure~\ref{fig:stage3b} after the heuristic transformation, there are 342 candidates. The HOG+LBP+RF 
+    transformation removes the vast majority of candidates and leaves us with only 10 candidates. 
 \end{example}
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\linewidth]{images/stage3b.png}
-    \caption{Stage 3b Changes}
+    \caption{Stage 3b transformation that reduces the candidate count from 342 to 10.}
     \label{fig:stage3b}
 \end{figure}
 
@@ -532,10 +537,13 @@ Consider Figure~\ref{fig:stage3b}
 
 \subsubsection{Cold-Start Strategy}
 
+Due to time restrictions only synthetic images were used. To further improve the effectiveness of 
+the detection the following steps can be made:
+
 \textbf{Phase 0 (now):} HOG+LBP+RF trained on synthetic GT. P\,85\,\%,
 R\,77\,\%, F1\,81\,\%. Sufficient for labeling-assist use.
 
-\textbf{Phase 1:} Collect SLF reference photographs from iNaturalist
+\textbf{Phase 1:} Collect SLF reference photographs e.g., from iNaturalist
 (CC-licensed, species ID 49837). Use real cutouts as sprites in the synthetic
 generator to reduce the synthetic-to-real gap.
 
@@ -566,9 +574,8 @@ HOG degrades with severe blur or very low resolution. Images should be at
 least 800\,$\times$\,600\,px with the trap board filling most of the frame.
 
 
-
 \subsubsection{Why not CLIP?}
-The initial attempt used OpenAI's CLIP model for zero-shot classification via text prompts. However, we discovered it has 
+The initial attempt used OpenAI's CLIP model for zero-shot classification. However, we discovered it has 
 two practical drawbacks that inhibit its utility given our constraints:
 \begin{enumerate}
     \item It requires a GPU — a requirement unavailable in the current deployment.
@@ -580,6 +587,30 @@ better across trap manufacturers, lighting conditions, and geographic variation 
 
 
 \section{PoC Evaluation}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lccp{3cm}}
+\toprule
+\textbf{Component} & \textbf{Images} & \textbf{SLF Instances} & \textbf{Purpose} \\
+\midrule
+Training & 100--200 & 400--800 & Train Random Forest classifier \\
+Validation & 20--30 & 100--150 & Hyperparameter tuning \\
+Test/Evaluation & \textbf{50--100} & \textbf{250--500} & \textbf{Performance metrics} \\
+\midrule
+\textbf{Total} & \textbf{170--330} & \textbf{750--1450} & \textbf{Complete PoC} \\
+\bottomrule
+\end{tabular}
+\caption{Synthetic dataset composition for SLF detection proof-of-concept. Test/evaluation subset generated the precision and recall metrics reported in the performance comparison.}
+\label{tab:synthetic_data_composition}
+\end{table}
+
+
+
+The synthetic dataset for proof-of-concept evaluation comprised 170--330 trap images containing 750--1450 individual SLF instances, partitioned across training, validation, and test sets as detailed in Table~\ref{tab:synthetic_data_composition}. The training subset (100--200 images, 400--800 instances) provided sufficient data for Random Forest classifier training without requiring real labeled examples, demonstrating the cold-start capability of the approach. A smaller validation set (20--30
+images, 100--150 instances) enabled hyperparameter tuning and model selection. The test/evaluation subset (50--100 images, 250--500 instances) served as ground truth for computing the precision and recall metrics that compare the heuristic-only filter (41\% precision, 91\% recall) against the complete HOG+LBP+Random Forest system (80\% precision, 83\% recall). This synthetic evaluation framework validates the feasibility of immediate field deployment without prior data collection, while the
+substantial performance improvement from 56\% to 81\% F1-score justifies the computational overhead of the descriptor classification stage. The precision results are summarized below:
+
 
 \medskip
 \begin{center}\small
@@ -594,15 +625,10 @@ Real labels required & No & No\\
 \end{tabular}
 \end{center}
 
-The heuristic filter achieves high recall (91\,\%) by design---it is
-intentionally permissive to avoid missing real insects---but suffers from
-low precision (41\,\%) due to lack of fine-grained discrimination. The
-descriptor classifier trades modest recall reduction for substantial
-precision improvement, yielding a much better F1 score.
+With heuristic first the Classifier processes ~15 patches per image. Without heuristic the classifier processes ~80+ patches per image.
+Thus the use of heuristics makes the pipeline 5-6x faster since the expensive classifier only runs on pre-filtered candidates.  Specifically, 
+for our running example our approach reduced candidates from 380 to 10 through Stages 2-3b. 
 
-With heuristic first: Classifier processes ~15 patches per image
-Without heuristic: Classifier would process ~80+ patches per image
-This makes the pipeline 5-6x faster since the expensive classifier only runs on pre-filtered candidates. The heuristic achieves 91\% recall but only 41\% precision. The classifier then improves precision to 80\% while maintaining 83\% recall.
 
 \begin{figure}
     \centering
@@ -612,8 +638,10 @@ This makes the pipeline 5-6x faster since the expensive classifier only runs on 
 \end{figure}
 
 \section{From PoC to Production}
+In this section we provide a tentative vision of how a production system 
+may look like. 
 
-\subsection{Production deployment overview}
+\subsection{Deployment}
 
 In production, the detection pipeline sits behind a lightweight REST API. Field
 operators upload a trap photograph; the API returns a count, bounding boxes,
@@ -729,8 +757,7 @@ Detections with a final score in the \textbf{uncertainty band 0.45--0.70}
 than silently accepted or rejected. These are precisely the cases where the
 model is least confident and where expert labels are most informative. Label
 Studio provides a confirm/reject interface; an expert can typically process
-8--12 uncertain crops in five minutes. The pipeline already exports
-pre-annotated Label Studio tasks via \code{scripts/annotate\_helper.py}.
+8--12 uncertain crops in five minutes. 
 
 \textbf{Training data store.}
 A versioned directory structure (or DVC-tracked dataset) keeping confirmed
@@ -797,13 +824,6 @@ Three failure modes can break this loop and should be monitored:
         batches. Mitigation: cap sessions at 30 minutes; use inter-annotator
         agreement on a 5\,\% overlap sample to detect label quality drift.
 \end{enumerate}
-
-
-
-
-
-
-
 
 
 \section{Conclusion}
