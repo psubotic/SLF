@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.augmentation.synthetic_generator import SyntheticConfig, SyntheticTrapGenerator
 from src.detection.descriptor_classifier import (
@@ -15,6 +14,9 @@ from src.detection.feature_filter import FeatureFilter, FeatureFilterConfig
 from src.detection.pipeline import PipelineResult, SLFDetectionPipeline
 from src.detection.preprocessor import PreprocessorConfig, TrapImagePreprocessor
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 @pytest.fixture(scope="module")

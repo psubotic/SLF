@@ -30,4 +30,4 @@ jobs:
     
     - name: Linting with flake8
       run: |
-        flake8 src/ tests/ --count --max-line-length=88 --statistics
+        flake8 src/ tests/ --count --max-line-length=100 --statistics

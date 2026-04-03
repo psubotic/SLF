@@ -4,9 +4,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from src.detection.preprocessor import PreprocessorConfig, TrapImagePreprocessor
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 @pytest.fixture

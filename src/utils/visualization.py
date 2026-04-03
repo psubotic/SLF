@@ -71,7 +71,7 @@ def add_summary_overlay(
         f"Time: {elapsed_sec:.2f}s",
         f"Mode: {mode}" if mode else "",
     ]
-    lines = [l for l in lines if l]
+    lines = [ln for ln in lines if ln]
 
     padding = 8
     line_h = 22
@@ -111,7 +111,7 @@ def make_comparison_grid(
     for i, img in enumerate(images):
         row, col = divmod(i, n_cols)
         resized = cv2.resize(img, (W, H))
-        grid[row * H : (row + 1) * H, col * W : (col + 1) * W] = resized
+        grid[row * H:(row + 1) * H, col * W:(col + 1) * W] = resized
         if labels and i < len(labels):
             cv2.putText(
                 grid,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -342,9 +342,9 @@ class SyntheticTrapGenerator:
             occ = occlusion_mask[sy:ey, sx:ex, np.newaxis].astype(np.float32) / 255.0
             alpha = alpha * occ
 
-        region = bg[dy : dy + (ey - sy), dx : dx + (ex - sx)].astype(np.float32)
+        region = bg[dy:dy + (ey - sy), dx:dx + (ex - sx)].astype(np.float32)
         blended = alpha * patch[:, :, :3].astype(np.float32) + (1 - alpha) * region
-        bg[dy : dy + (ey - sy), dx : dx + (ex - sx)] = blended.astype(np.uint8)
+        bg[dy:dy + (ey - sy), dx:dx + (ex - sx)] = blended.astype(np.uint8)
         return bg
 
     @staticmethod
@@ -355,7 +355,7 @@ class SyntheticTrapGenerator:
         occ_y = random.randint(0, h // 2)
         occ_w = random.randint(w // 4, w // 2)
         occ_h = random.randint(h // 4, h // 2)
-        mask[occ_y : occ_y + occ_h, occ_x : occ_x + occ_w] = 0
+        mask[occ_y:occ_y + occ_h, occ_x:occ_x + occ_w] = 0
         return mask
 
     def _add_debris(self, bg: np.ndarray) -> np.ndarray:

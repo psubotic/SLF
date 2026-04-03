@@ -1,32 +1,8 @@
-"""
-descriptor_classifier.py
-────────────────────────
-A classical feature-based classifier that operates without any deep learning
-dependencies. Works in two modes:
-
-  one_class_svm  : Cold-start — trained on SYNTHETIC positive patches only.
-                   Uses a One-Class SVM to score candidates. Requires no real
-                   labeled data at all.
-
-  random_forest  : Supervised — trained on synthetic + confirmed real patches.
-                   A Random Forest on the same descriptor. Drops in once
-                   ~50+ confirmed real positives are available.
-
-Feature vector (per patch, ~600-dim):
-  - HOG (Histogram of Oriented Gradients): captures wing venation, body outline
-  - LBP (Local Binary Pattern histogram): captures surface texture (spots, glue)
-  - HSV histogram: encodes the colour distribution compactly
-  - Shape statistics: aspect ratio, solidity, extent — fast and discriminative
-
-The OC-SVM is trained on the fly from synthetic data the first time it's
-needed, then cached. No internet, no GPU, no pretrained weights required.
-"""
-
 from __future__ import annotations
 
 import logging
 import pickle
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -80,15 +56,6 @@ class DescriptorClassifierConfig:
 
 
 class DescriptorClassifier:
-    """
-    Classical HOG + LBP + HSV feature classifier for SLF patch scoring.
-
-    Usage
-    -----
-    >>> clf = DescriptorClassifier()
-    >>> clf.train_from_synthetic()          # Cold start — no real data needed
-    >>> scores = clf.score_batch(patches)
-    """
 
     def __init__(self, config: DescriptorClassifierConfig | None = None):
         self.cfg = config or DescriptorClassifierConfig()
@@ -96,15 +63,7 @@ class DescriptorClassifier:
         self._model = None
         self._trained = False
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Public API
-    # ──────────────────────────────────────────────────────────────────────────
-
     def score_batch(self, patches_bgr: List[np.ndarray]) -> List[float]:
-        """
-        Score a list of BGR image crops. Returns float scores in [0, 1].
-        Automatically trains from synthetic data on first call if untrained.
-        """
         if not patches_bgr:
             return []
 
@@ -120,17 +79,6 @@ class DescriptorClassifier:
         n: int | None = None,
         extra_negatives: List[np.ndarray] | None = None,
     ) -> None:
-        """
-        Train the classifier using only synthetic SLF patches.
-
-        In one_class_svm mode:   trains on synthetic positives only.
-        In random_forest mode:   trains on synthetic positives + hard negatives.
-
-        Parameters
-        ----------
-        n : number of synthetic patches to generate (default from config)
-        extra_negatives : additional BGR patches confirmed as non-SLF
-        """
         n = n or self.cfg.auto_train_n_synthetic
         logger.info("Generating %d synthetic patches for classifier training...", n)
 
@@ -232,10 +180,6 @@ class DescriptorClassifier:
         self._trained = True
         logger.info("Classifier loaded from %s (mode=%s)", path, self.cfg.mode)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Feature extraction
-    # ──────────────────────────────────────────────────────────────────────────
-
     def _extract(self, patch_bgr: np.ndarray) -> np.ndarray:
         """Extract the full feature vector from a single BGR patch."""
         W, H = self.cfg.patch_size
@@ -292,11 +236,6 @@ class DescriptorClassifier:
         return (feat / total).astype(np.float32)
 
     def _shape_features(self, patch_bgr: np.ndarray) -> np.ndarray:
-        """
-        Compact shape descriptor from the largest foreground contour.
-        Captures: aspect ratio, solidity, extent, ellipse eccentricity,
-        hu moments (7), and contour area fraction.
-        """
         gray = cv2.cvtColor(patch_bgr, cv2.COLOR_BGR2GRAY)
         _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         contours, _ = cv2.findContours(
@@ -320,11 +259,10 @@ class DescriptorClassifier:
 
         # Ellipse fit — gives eccentricity and orientation
         if len(cnt) >= 5:
-            (ex, ey), (ma, Mi), angle = cv2.fitEllipse(cnt)
+            (ex, ey), (ma, Mi), _ = cv2.fitEllipse(cnt)
             eccentricity = np.sqrt(1 - (min(ma, Mi) / (max(ma, Mi) + 1e-8)) ** 2)
         else:
             eccentricity = 0.0
-            angle = 0.0
 
         # Hu moments — rotation/scale invariant shape signature
         moments = cv2.moments(cnt)
@@ -337,10 +275,6 @@ class DescriptorClassifier:
             + hu_log.tolist(),
             dtype=np.float32,
         )
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Scoring
-    # ──────────────────────────────────────────────────────────────────────────
 
     def _predict_proba(self, X_scaled: np.ndarray) -> List[float]:
         if self.cfg.mode == "one_class_svm":
@@ -356,10 +290,6 @@ class DescriptorClassifier:
             return proba.tolist()
 
         return [0.5] * len(X_scaled)
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Synthetic patch generation (internal training data)
-    # ──────────────────────────────────────────────────────────────────────────
 
     def _generate_synthetic_patches(self, n: int) -> List[np.ndarray]:
         """Generate synthetic SLF-like patches for OC-SVM / RF training."""
