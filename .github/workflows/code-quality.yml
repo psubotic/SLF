@@ -26,8 +26,8 @@ jobs:
     
     - name: Code formatting with Black
       run: |
-        black --check --diff src/ tests/
+        black --check --diff src/ tests/ 
     
     - name: Linting with flake8
       run: |
-        flake8 src/ tests/ --count --max-line-length=100 --statistics
+        flake8 src/ tests/ --count --max-line-length=100 --statistics --extend-ignore=E203

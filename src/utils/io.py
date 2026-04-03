@@ -43,4 +43,4 @@ def save_result_json(result_dict: Dict, output_path: str | Path) -> None:
 
 def batch_iter(items: List, batch_size: int) -> Iterator[List]:
     for i in range(0, len(items), batch_size):
-        yield items[i:i + batch_size]
+        yield items[i : i + batch_size]

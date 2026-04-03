@@ -6,7 +6,6 @@ import pytest
 
 from src.detection.preprocessor import PreprocessorConfig, TrapImagePreprocessor
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 

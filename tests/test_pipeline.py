@@ -15,7 +15,6 @@ from src.detection.pipeline import PipelineResult, SLFDetectionPipeline
 from src.detection.preprocessor import PreprocessorConfig, TrapImagePreprocessor
 from src.detection.region_proposer import RegionProposer, RegionProposerConfig
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
