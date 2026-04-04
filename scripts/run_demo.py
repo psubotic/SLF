@@ -5,13 +5,10 @@ Usage:
     python run_demo.py --mode image --image path/to/trap.jpg  # provide real image and process
     python run_demo.py --mode batch --input-dir images/ --output-dir results/ # provide folder
 """
-
 import argparse
 import json
 import logging
 
-# Ensure src/ is in Python path for local imports
-import sys
 import time
 from pathlib import Path
 from typing import List, Tuple
@@ -19,9 +16,16 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+import sys
+from pathlib import Path
 
-from src.augmentation.synthetic_generator import SyntheticConfig, SyntheticTrapGenerator
+# Ensure project root is in path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.augmentation import SyntheticConfig, SyntheticTrapGenerator
+
+
 from src.detection.descriptor_classifier import (
     DescriptorClassifier,
     DescriptorClassifierConfig,
