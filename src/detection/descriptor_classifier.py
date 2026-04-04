@@ -15,8 +15,7 @@ from sklearn.svm import OneClassSVM
 
 logger = logging.getLogger(__name__)
 
-PATCH_SIZE = (64, 128)  # (W, H) — standard HOG window, portrait orientation
-
+PATCH_SIZE = (64, 128)  #(W, H) — standard HOG window, portrait orientation
 
 @dataclass
 class DescriptorClassifierConfig:

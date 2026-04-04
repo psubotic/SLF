@@ -518,6 +518,18 @@ IoU\,$\geq$\,0.4 against a known synthetic GT box become positives; crops with
 IoU\,$<$\,0.1 become hard negatives. This ensures the training distribution
 matches exactly what the region proposer produces at inference time.
 
+Alternatively, we can switch to One-Class SVM mode for scenarios where only positive training data is 
+available, learning the boundaries of normal SLF appearance and flagging outliers as non-SLF. This 
+dual-mode approach enables rapid deployment using One-Class SVM when minimal training data exists, while 
+allowing migration to Random Forest for improved production performance once sufficient synthetic negative 
+examples are generated. Both algorithms operate on the same HOG+LBP+HSV feature vectors, and the mode selection 
+is controlled via configuration, providing operational flexibility without requiring code changes or model 
+retraining infrastructure.
+
+This design philosophy supports the cold-start agricultural deployment strategy by allowing immediate field testing 
+with basic anomaly detection (One-Class SVM) while enabling seamless upgrade to higher-precision classification 
+(Random Forest) as the synthetic data generation pipeline matures.
+
 
 \begin{example}
 Consider Figure~\ref{fig:stage3b} after the heuristic transformation, there are 342 candidates. The HOG+LBP+RF 
