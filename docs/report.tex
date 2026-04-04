@@ -155,7 +155,15 @@ a machine learning approach that will give reasonable accuracy (F1\footnote{F1 i
 given the constraints. Most state-of-the-art zero shot
 approaches (e.g., zero-shot deep learning~\cite{clip}) require a GPU and deep learning require training data (~\cite{deep}). We therefore 
 propose a technique that utilizes an heuristic approximation combined with classical machine learning techniques trained on 
-synthetic data.
+synthetic data (an example synthetic image is shown in Figure~\ref{fig:synth}).
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/synth.jpg}
+    \caption{Trap image changes from preprocessing}
+    \label{fig:synth}
+\end{figure}
 
 \subsection{Pipeline}
 We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pipeline}. 
@@ -660,7 +668,6 @@ date. Figure~\ref{fig:prodarch} shows the full data flow.
 \centering
 \begin{tikzpicture}[node distance=0.55cm and 1.1cm]
 
-%% ── LEFT COLUMN: main inference path ────────────────────────────────────────
 \node[sbox={colfield}{3.0cm}] (field)
   {\textbf{Field device}\\{\scriptsize phone / trail camera}};
 
@@ -670,7 +677,6 @@ date. Figure~\ref{fig:prodarch} shows the full data flow.
 \node[sbox={colworker}{3.0cm}, below=of ingest] (worker)
   {\textbf{Detection worker}\\{\scriptsize Docker container}};
 
-% pipeline stages inside worker box
 \node[sboxn, below=0.25cm of worker, xshift=0cm] (s1)
   {Stage 1: Preprocess\\{\scriptsize CLAHE · deglare}};
 \node[sboxn, below=0.3cm of s1] (s2)
@@ -689,7 +695,6 @@ date. Figure~\ref{fig:prodarch} shows the full data flow.
 \node[sbox={colfield}{3.0cm}, below=of db] (dash)
   {\textbf{Monitoring dashboard}\\{\scriptsize maps · counts · alerts}};
 
-% arrows left column
 \draw[arr] (field)  -- node[lbl,right]{HTTPS upload} (ingest);
 \draw[arr] (ingest) -- node[lbl,right]{job queue} (worker);
 \draw[arr] (worker.south) -- (s1.north);
@@ -700,7 +705,6 @@ date. Figure~\ref{fig:prodarch} shows the full data flow.
 \draw[arr] (result) -- node[lbl,right]{write result} (db);
 \draw[arr] (db)     -- (dash);
 
-%% ── RIGHT COLUMN: feedback path ─────────────────────────────────────────────
 \node[sbox={colreview}{3.0cm}, right=2.2cm of result] (queue)
   {\textbf{Review queue}\\{\scriptsize score 0.45--0.70}};
 
@@ -727,7 +731,6 @@ date. Figure~\ref{fig:prodarch} shows the full data flow.
 \draw[arr] (retrain.west) -- ++(-0.55,0) |-
   node[lbl, pos=0.25, left]{deploy new model} (worker.east);
 
-%% ── Bounding box around pipeline stages ─────────────────────────────────────
 \begin{pgfonlayer}{background}
   \node[draw=darkgreen!40, fill=colworker!30, rounded corners=5pt,
         fit=(s1)(s4), inner sep=5pt] {};
