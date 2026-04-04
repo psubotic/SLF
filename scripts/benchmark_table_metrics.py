@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
 """
 This script:
 1. Generates synthetic test images with fixed seeds (separate from training)

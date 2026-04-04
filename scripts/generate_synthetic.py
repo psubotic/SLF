@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
 """
 Usage:
   python scripts/generate_synthetic.py --n 100 --out data/synthetic/ --seed 0

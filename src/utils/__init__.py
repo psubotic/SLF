@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
+
 from .visualization import (
     add_summary_overlay,
     draw_detections,

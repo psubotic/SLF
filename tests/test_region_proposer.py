@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
+
 import sys
 from pathlib import Path
 

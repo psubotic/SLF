@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
 """
 Usage:
     python run_demo.py --mode synthetic       # Generate and process synthetic trap image abd process

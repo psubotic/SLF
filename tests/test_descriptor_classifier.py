@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2026 Pavle Subotic
+
 import sys
 import tempfile
 from pathlib import Path
