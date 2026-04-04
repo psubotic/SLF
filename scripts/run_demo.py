@@ -10,8 +10,6 @@ Usage:
 import argparse
 import json
 import logging
-
-import time
 from pathlib import Path
 from typing import List, Tuple
 
