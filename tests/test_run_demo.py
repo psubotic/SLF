@@ -15,9 +15,6 @@ import cv2
 import numpy as np
 import pytest
 
-# Ensure project root is on sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from scripts.run_demo import (
     build_pipeline,
     main,
@@ -26,11 +23,12 @@ from scripts.run_demo import (
     run_on_image,
     run_synthetic_demo,
 )
+
 from src.detection.pipeline import Detection, PipelineResult
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+
+# Ensure project root is on sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def _make_image(h: int = 512, w: int = 512) -> np.ndarray:
