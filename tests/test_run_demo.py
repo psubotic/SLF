@@ -28,10 +28,10 @@ from scripts.run_demo import (
 )
 from src.detection.pipeline import Detection, PipelineResult
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_image(h: int = 512, w: int = 512) -> np.ndarray:
     rng = np.random.default_rng(0)
@@ -75,6 +75,7 @@ def _mock_pipeline(result: PipelineResult = None) -> MagicMock:
 # build_pipeline
 # ---------------------------------------------------------------------------
 
+
 class TestBuildPipeline:
     def test_returns_pipeline_from_valid_config(self, tmp_path):
         """build_pipeline delegates to SLFDetectionPipeline.from_config when file exists."""
@@ -103,6 +104,7 @@ class TestBuildPipeline:
 # run_on_image
 # ---------------------------------------------------------------------------
 
+
 class TestRunOnImage:
     def test_returns_dict_with_expected_keys(self, tmp_path):
         pipeline = _mock_pipeline()
@@ -125,21 +127,30 @@ class TestRunOnImage:
 
     def test_show_proposals_draws_bboxes(self, tmp_path):
         """When show_proposals=True, cv2.rectangle is called once per detection by run_on_image.
-        Both draw_detections and add_summary_overlay are mocked to isolate those calls."""
+        Both draw_detections and add_summary_overlay are mocked to isolate those calls.
+        """
         pipeline = _mock_pipeline()
         out = tmp_path / "out.jpg"
-        with patch("scripts.run_demo.draw_detections", return_value=_make_image()), \
-             patch("scripts.run_demo.add_summary_overlay", return_value=_make_image()), \
-             patch("scripts.run_demo.cv2.rectangle") as mock_rect:
+        with patch(
+            "scripts.run_demo.draw_detections", return_value=_make_image()
+        ), patch(
+            "scripts.run_demo.add_summary_overlay", return_value=_make_image()
+        ), patch(
+            "scripts.run_demo.cv2.rectangle"
+        ) as mock_rect:
             run_on_image(_make_image(), pipeline, out, show_proposals=True)
             assert mock_rect.call_count == len(pipeline.run.return_value.detections)
 
     def test_show_proposals_false_skips_rectangles(self, tmp_path):
         pipeline = _mock_pipeline()
         out = tmp_path / "out.jpg"
-        with patch("scripts.run_demo.draw_detections", return_value=_make_image()), \
-             patch("scripts.run_demo.add_summary_overlay", return_value=_make_image()), \
-             patch("scripts.run_demo.cv2.rectangle") as mock_rect:
+        with patch(
+            "scripts.run_demo.draw_detections", return_value=_make_image()
+        ), patch(
+            "scripts.run_demo.add_summary_overlay", return_value=_make_image()
+        ), patch(
+            "scripts.run_demo.cv2.rectangle"
+        ) as mock_rect:
             run_on_image(_make_image(), pipeline, out, show_proposals=False)
             mock_rect.assert_not_called()
 
@@ -160,6 +171,7 @@ class TestRunOnImage:
 # ---------------------------------------------------------------------------
 # run_synthetic_demo
 # ---------------------------------------------------------------------------
+
 
 class TestRunSyntheticDemo:
     def _run(self, tmp_path, **kwargs):
@@ -206,6 +218,7 @@ class TestRunSyntheticDemo:
 # ---------------------------------------------------------------------------
 # run_image_demo
 # ---------------------------------------------------------------------------
+
 
 class TestRunImageDemo:
     def _make_image_file(self, directory: Path) -> Path:
@@ -255,6 +268,7 @@ class TestRunImageDemo:
 # ---------------------------------------------------------------------------
 # run_batch_demo
 # ---------------------------------------------------------------------------
+
 
 class TestRunBatchDemo:
     def _populate_dir(self, directory: Path, count: int = 2) -> list[Path]:
@@ -331,7 +345,9 @@ class TestRunBatchDemo:
     def test_pipeline_built_once(self, tmp_path):
         self._populate_dir(tmp_path, count=3)
         out_dir = tmp_path / "out"
-        with patch("scripts.run_demo.build_pipeline", return_value=_mock_pipeline()) as mock_build:
+        with patch(
+            "scripts.run_demo.build_pipeline", return_value=_mock_pipeline()
+        ) as mock_build:
             run_batch_demo(tmp_path, out_dir)
             mock_build.assert_called_once()
 
@@ -339,6 +355,7 @@ class TestRunBatchDemo:
 # ---------------------------------------------------------------------------
 # main (CLI entry point)
 # ---------------------------------------------------------------------------
+
 
 class TestMain:
     def test_returns_0_on_synthetic_success(self, tmp_path):
@@ -352,7 +369,9 @@ class TestMain:
                 mock_fn.assert_called_once()
 
     def test_returns_1_on_exception(self, tmp_path):
-        with patch("scripts.run_demo.run_synthetic_demo", side_effect=RuntimeError("boom")):
+        with patch(
+            "scripts.run_demo.run_synthetic_demo", side_effect=RuntimeError("boom")
+        ):
             with patch(
                 "sys.argv",
                 ["run_demo.py", "--mode", "synthetic", "--output-dir", str(tmp_path)],
@@ -382,8 +401,10 @@ class TestMain:
                 "sys.argv",
                 [
                     "run_demo.py",
-                    "--mode", "synthetic",
-                    "--output-dir", str(tmp_path),
+                    "--mode",
+                    "synthetic",
+                    "--output-dir",
+                    str(tmp_path),
                     "--proposals",
                 ],
             ):
@@ -400,9 +421,12 @@ class TestMain:
                 "sys.argv",
                 [
                     "run_demo.py",
-                    "--mode", "image",
-                    "--image", str(fake_image),
-                    "--output-dir", str(tmp_path),
+                    "--mode",
+                    "image",
+                    "--image",
+                    str(fake_image),
+                    "--output-dir",
+                    str(tmp_path),
                     "--proposals",
                 ],
             ):

@@ -7,6 +7,7 @@ Usage:
     python run_demo.py --mode image --image path/to/trap.jpg  # provide real image and process
     python run_demo.py --mode batch --input-dir images/ --output-dir results/ # provide folder
 """
+
 import argparse
 import json
 import logging
@@ -112,7 +113,10 @@ def run_synthetic_demo(output_dir: Path, show_proposals: bool = False) -> None:
     # Build pipeline and run detection
     pipeline = build_pipeline()
     result_dict = run_on_image(
-        image, pipeline, output_dir / "result_synthetic.jpg", "synthetic_demo",
+        image,
+        pipeline,
+        output_dir / "result_synthetic.jpg",
+        "synthetic_demo",
         show_proposals=show_proposals,
     )
 
@@ -136,7 +140,9 @@ def run_synthetic_demo(output_dir: Path, show_proposals: bool = False) -> None:
     print(f"  {output_dir / 'ground_truth.json'}")
 
 
-def run_image_demo(image_path: Path, output_dir: Path, show_proposals: bool = False) -> None:
+def run_image_demo(
+    image_path: Path, output_dir: Path, show_proposals: bool = False
+) -> None:
     logger.info("=== Image Demo Mode ===")
 
     if not image_path.exists():
@@ -152,7 +158,10 @@ def run_image_demo(image_path: Path, output_dir: Path, show_proposals: bool = Fa
     # Run detection
     pipeline = build_pipeline()
     result_dict = run_on_image(
-        image, pipeline, output_dir / f"result_{image_path.stem}.jpg", image_path.stem,
+        image,
+        pipeline,
+        output_dir / f"result_{image_path.stem}.jpg",
+        image_path.stem,
         show_proposals=show_proposals,
     )
 

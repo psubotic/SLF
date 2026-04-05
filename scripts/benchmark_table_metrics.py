@@ -64,6 +64,7 @@ SYNTHETIC_TRAINING_PATCHES = 400
 # IoU threshold for matching predictions to ground truth
 IOU_THRESHOLD = 0.3
 
+
 def iou(box1: Tuple[int, int, int, int], box2: Tuple[int, int, int, int]) -> float:
     x1, y1, w1, h1 = box1
     x2, y2, w2, h2 = box2
@@ -128,6 +129,7 @@ def evaluate_detections(
     fn = sum(1 for matched in gt_matched if not matched)
 
     return tp, fp, fn
+
 
 def compute_metrics(tp: int, fp: int, fn: int) -> Dict[str, float]:
     precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
@@ -406,6 +408,7 @@ def main():
     print(f"Detailed results saved to: {output_path}")
     print()
     print("Benchmark completed successfully!")
+
 
 if __name__ == "__main__":
     main()
