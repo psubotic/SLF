@@ -100,9 +100,9 @@ Spotted Lanternfly Detection\\[2pt]in Pheromone Trap Images}\\[14pt]
 We describe a proof-of-concept ML pipeline for detecting and counting adult
     \textit{Lycorma delicatula} a.k.a Spotted Lanternfly(SLF) in pheromone sticky trap
 photographs. The challenge is to propose a model that has reasonable accuracy 
-    with no labeled training dataset, and limited to deployment on a CPU. These restrictions 
-    prevent the use of common state-of-the-art 
-    techniques.  Our proposed solution combines a HOG, LBP and Random Forest classifier trained from synthetic
+    and yet has no labeled training dataset, and is limited to execution (training and inference) a CPU. Since these restrictions 
+    prevent the use of common state-of-the-art techniques based on deep learning, a non-standard solution is required .  In this report 
+we propose a solution that combines a HOG, LBP and Random Forest classifier trained from synthetic
 ground truth. A preliminary evaluations shows that our approach achieves 85\% precision, 77\% recall and 81\% F1 with no GPU and no manually labeled images. We conclude by a tentative design for a production
 deployment architecture that incorporates a feedback loop that uses uncertain in-production
 detections to continuously grow the training dataset with minimal expert effort.
@@ -111,10 +111,10 @@ detections to continuously grow the training dataset with minimal expert effort.
 
 \section{Problem Definition}
 
-The goal of this project to detect and count adult \textit{Lycorma delicatula}, refered to as SLF, in 
+The goal of this project to detect and count adult \textit{Lycorma delicatula}, referred to as SLF, in 
 pheromone sticky trap photographs. A SLF is an insect with wings. These insects get caught on a trap, 
 which has a sticky surface that attracts various insects, fallen debris, leaves etc. The photograph can be 
-tainted by blur, light etc. making this task challanging. A trap with caught insects is shown in 
+tainted by blur, light etc. making this task challenging. A trap with caught insects is shown in 
 Figure~\ref{fig:example}. We will use this image as a running example throughout the report. 
 
 \begin{figure}[htbp]
@@ -126,7 +126,7 @@ Figure~\ref{fig:example}. We will use this image as a running example throughout
 
 
 \subsection{Scope}
- This project is only a proof-of-concept specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
+This project has the goal of producing a proof-of-concept specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
 production-ready monitoring platform, with all performance validation conducted on synthetic images and clear acknowledgment 
 that real-world performance requires validation on field data. 
 
@@ -138,6 +138,7 @@ We outline several design constraints we need to consider in the design of the S
 \begin{tabularx}{\linewidth}{@{}L{4.8cm}X@{}}
 \toprule\textbf{Constraint}&\textbf{Impact}\\\midrule
 No labeled dataset & Cold-start; supervised training not immediately possible\\[3pt]
+No GPU available & The model training and inference should execute on a personal computer CPU\\[3pt]
 Sticky glue board backgrounds & Specular highlights, variable colour, glue texture confounds edges\\[3pt]
 Debris and non-target insects & High false positive rate without species discrimination\\[3pt]
 Overlapping specimens & May be counted as one detection\\[3pt]
@@ -150,9 +151,9 @@ High intra-class variation & Age, sex, wing position (spread vs.\ folded), wear\
 
 \newpage
 \section{Proposed Solution}
-In this section we describe the proposed solution. The challenge is to find 
+The challenge of this project is to find 
 a machine learning approach that will give reasonable accuracy (F1\footnote{F1 is calculated as 2x(precision*recall/precision+recall)} $\approx 0.8$) 
-given the constraints. Most state-of-the-art zero shot
+given the constraints in Table~\ref{tbl:constr}. Most state-of-the-art zero shot
 approaches (e.g., zero-shot deep learning~\cite{clip}) require a GPU and deep learning require training data (~\cite{deep}). We therefore 
 propose a technique that utilizes an heuristic approximation combined with classical machine learning techniques trained on 
 synthetic data (an example synthetic image is shown in Figure~\ref{fig:synth}).
