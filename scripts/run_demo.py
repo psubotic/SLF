@@ -194,6 +194,7 @@ def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
 
     logger.info("Found %d images to process", len(image_paths))
 
+    output_dir.mkdir(parents=True, exist_ok=True)
     pipeline = build_pipeline()
     results_summary = []
 
