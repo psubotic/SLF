@@ -17,7 +17,6 @@ import cv2
 import numpy as np
 
 import sys
-from pathlib import Path
 
 # Ensure project root is in path
 project_root = Path(__file__).resolve().parent.parent
@@ -89,7 +88,7 @@ def run_on_image(
     return result.to_dict()
 
 
-def run_synthetic_demo(output_dir: Path) -> None:
+def run_synthetic_demo(output_dir: Path, show_proposals: bool = False) -> None:
     logger.info("=== Synthetic Demo Mode ===")
 
     # Generate synthetic trap image
@@ -113,7 +112,8 @@ def run_synthetic_demo(output_dir: Path) -> None:
     # Build pipeline and run detection
     pipeline = build_pipeline()
     result_dict = run_on_image(
-        image, pipeline, output_dir / "result_synthetic.jpg", "synthetic_demo"
+        image, pipeline, output_dir / "result_synthetic.jpg", "synthetic_demo",
+        show_proposals=show_proposals,
     )
 
     # Save JSON results
@@ -136,7 +136,7 @@ def run_synthetic_demo(output_dir: Path) -> None:
     print(f"  {output_dir / 'ground_truth.json'}")
 
 
-def run_image_demo(image_path: Path, output_dir: Path) -> None:
+def run_image_demo(image_path: Path, output_dir: Path, show_proposals: bool = False) -> None:
     logger.info("=== Image Demo Mode ===")
 
     if not image_path.exists():
@@ -152,7 +152,8 @@ def run_image_demo(image_path: Path, output_dir: Path) -> None:
     # Run detection
     pipeline = build_pipeline()
     result_dict = run_on_image(
-        image, pipeline, output_dir / f"result_{image_path.stem}.jpg", image_path.stem
+        image, pipeline, output_dir / f"result_{image_path.stem}.jpg", image_path.stem,
+        show_proposals=show_proposals,
     )
 
     # save JSON results
@@ -234,7 +235,8 @@ def run_batch_demo(input_dir: Path, output_dir: Path) -> None:
     print(f"Images processed:        {len(results_summary)}")
     print(f"Total SLF detected:      {total_slf}")
     print(f"Total processing time:   {total_time:.1f}s")
-    print(f"Average time per image:  {total_time/len(results_summary):.2f}s")
+    if results_summary:
+        print(f"Average time per image:  {total_time/len(results_summary):.2f}s")
 
 
 def main():
@@ -273,11 +275,11 @@ def main():
 
     try:
         if args.mode == "synthetic":
-            run_synthetic_demo(args.output_dir)
+            run_synthetic_demo(args.output_dir, show_proposals=args.proposals)
         elif args.mode == "image":
             if not args.image:
                 parser.error("--image is required for image mode")
-            run_image_demo(args.image, args.output_dir)
+            run_image_demo(args.image, args.output_dir, show_proposals=args.proposals)
         elif args.mode == "batch":
             if not args.input_dir:
                 parser.error("--input-dir is required for batch mode")
