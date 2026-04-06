@@ -111,11 +111,11 @@ detections to continuously grow the training dataset with minimal expert effort.
 
 \section{Problem Definition}
 
-The goal of this project to detect and count adult \textit{Lycorma delicatula}, referred to as SLF, in 
-pheromone sticky trap photographs. A SLF is an insect with wings. These insects get caught on a trap, 
-which has a sticky surface that attracts various insects, fallen debris, leaves etc. The photograph can be 
-tainted by blur, light etc. making this task challenging. A trap with caught insects is shown in 
-Figure~\ref{fig:example}. We will use this image as a running example throughout the report. 
+The goal of this project to detect and count adult \textit{Lycorma delicatula}, referred to as a Spotted Lanternfly (SLF), in 
+pheromone sticky trap photographs. In simple terms, a SLF is an insect with wings. These insects get caught on a trap, 
+which has a sticky typically yellow surface that attracts SLFs but also various other insects, fallen debris, leaves etc. Moreover, 
+the photograph can be tainted by blur, light, different angles etc. making this task challenging. An example trap with caught 
+SLFs is shown in Figure~\ref{fig:example}. We will use this image as a running example throughout the report. 
 
 \begin{figure}[htbp]
     \centering
@@ -126,10 +126,10 @@ Figure~\ref{fig:example}. We will use this image as a running example throughout
 
 
 \subsection{Scope}
-This project has the goal of producing a proof-of-concept specifically designed to address the cold-start problem of having no existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility rather than a 
-production-ready monitoring platform, with all performance validation conducted on synthetic images and clear acknowledgment 
-that real-world performance requires validation on field data. 
-
+This project has the goal of producing a proof-of-concept (PoC) specifically designed to address the cold-start problem of not having an 
+existing labeled training dataset.  The project scope is explicitly limited to a working baseline system that demonstrates feasibility 
+rather than a production-ready monitoring platform, with all performance validation conducted on synthetic images and a clear 
+acknowledgment that real-world performance requires validation on field data. 
 
 \subsection{Design Constraints}
 We outline several design constraints we need to consider in the design of the SLF detector PoC. The constraints are summarized in Table~\ref{tbl:constr}.
@@ -173,7 +173,7 @@ We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pip
 \resizebox{0.7\textwidth}{!}{
 \begin{tikzpicture}
 % Main pipeline nodes
-\node[draw, rectangle, fill=green!20, text width=2.5cm, text centered] (input) at (0,0) {Raw Trap Image\\(Variable Size)};
+\node[draw, rectangle, fill=green!20, text width=2.5cm, text centered] (input) at (0,0) {Input: Raw Trap Image\\(Variable Size)};
 
 \node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (prep) at (0,-2.5) {Stage 1\\Preprocessing};
 
@@ -183,7 +183,7 @@ We break our technique into a 4 stage pipeline summarized in Figure~\ref{fig:pip
 
 \node[draw, rectangle, fill=blue!20, text width=2.5cm, text centered] (class) at (0,-10) {Stage 3b\\Descriptor Classifier};
 
-\node[draw, rectangle, fill=orange!20, text width=2.5cm, text centered] (output) at (0,-12.5) {SLF Count +\\Locations};
+\node[draw, rectangle, fill=orange!20, text width=2.5cm, text centered] (output) at (0,-12.5) {Output: SLF Count +\\Locations};
 
 % Detail boxes (right side)
 \node[text width=3cm, font=\small] at (4,-2.5) {CLAHE enhancement\\Glare removal\\Resize to 1024×1024};
@@ -253,7 +253,7 @@ each transformation.
 \subsection{Region Proposal}
 The region proposal stage (Stage2) serves as the critical bridge between processing the entire image and focusing computational 
 resources on specific areas that \emph{might} contain insects. Without this stage, the detection pipeline would face an intractable 
-search problem: examining every possible location and scale within a 1024x1024 image would require evaluating millions of 
+search problem: examining every possible location within a 1024x1024 image would require evaluating millions of 
 potential bounding boxes, making real-time or even efficient detection impossible.
 
 The fundamental challenge is that insects represent a tiny fraction of the total image area. A typical trap photograph shows 
@@ -261,8 +261,8 @@ mostly yellow sticky board background, with perhaps three to six small insects s
 the expensive descriptor classifier on every possible rectangular region, the proposal stage uses fast classical computer vision 
 techniques to identify a manageable number of candidate locations that warrant closer examination.
 
-The implementation combines two complementary detection methods to ensure comprehensive coverage. 
-Maximally Stable Extremal Regions (MSER)~\cite{mser} excels at finding compact, blob-like structures that remain consistent across 
+The implementation combines two complementary detection methods to ensure comprehensive coverage.
+Firstly, Maximally Stable Extremal Regions (MSER)~\cite{mser} which excels at finding compact, blob-like structures that remain consistent across 
 multiple intensity thresholds. This technique is particularly effective at detecting insect bodies~\cite{insects}, which typically 
 appear as coherent dark or light regions against the trap background. MSER works by progressively thresholding the image 
 at different intensity levels and identifying regions that persist across multiple thresholds, indicating stable, 
@@ -278,8 +278,8 @@ smaller than 300 square pixels likely represent noise, debris fragments, or imag
 pixels probably encompass multiple objects or large background areas rather than individual insects. These size thresholds correspond 
 roughly to 3-30 millimeter objects at typical trap photography distances.
 
-The candidates from both detection methods are then merged and processed through non-maximum suppression using intersection-over-union 
-scoring. This step eliminates duplicate detections where MSER and Canny contours have identified overlapping regions of the same object, ensuring that each potential insect is represented by a single bounding box rather than multiple overlapping proposals.
+The candidates from both detection methods are then merged and processed through non-maximum suppression using \emph{intersection-over-union 
+scoring}. This step eliminates duplicate detections where MSER and Canny contours have identified overlapping regions of the same object, ensuring that each potential insect is represented by a single bounding box rather than multiple overlapping proposals.
 
 The output of this stage is typically 15-50 bounding boxes per image, representing a dramatic reduction from the millions of possible locations while maintaining high confidence that genuine insects have been captured. The region proposer achieves very high recall, meaning it rarely misses actual insects, though it also generates false positives that represent debris, shadows, or other non-insect features. This high-recall, moderate-precision trade-off is appropriate for a proposal stage since downstream processing will refine the candidate list.
 The computational efficiency gained through region proposal is substantial. Instead of requiring the descriptor classifier to 
@@ -527,7 +527,7 @@ IoU\,$\geq$\,0.4 against a known synthetic GT box become positives; crops with
 IoU\,$<$\,0.1 become hard negatives. This ensures the training distribution
 matches exactly what the region proposer produces at inference time.
 
-Alternatively, we support switching to \emph{One-Class SVM} mode for scenarios where only positive training data is 
+Alternatively, we add suppor forswitching to \emph{One-Class SVM} mode for scenarios where only positive training data is 
 available, learning the boundaries of normal SLF appearance and flagging outliers as non-SLF. This 
 dual-mode approach enables rapid deployment using One-Class SVM when minimal training data exists, while 
 allowing migration to Random Forest for improved production performance once sufficient synthetic negative 
@@ -562,8 +562,7 @@ the detection the following steps can be made:
 \textbf{Phase 0 (now):} HOG+LBP+RF trained on synthetic GT. P\,85\,\%,
 R\,77\,\%, F1\,81\,\%. Sufficient for labeling-assist use.
 
-\textbf{Phase 1:} Collect SLF reference photographs e.g., from iNaturalist
-(CC-licensed, species ID 49837). Use real cutouts as sprites in the synthetic
+\textbf{Phase 1:} Collect SLF reference photographs. Use real cutouts as sprites in the synthetic
 generator to reduce the synthetic-to-real gap.
 
 \textbf{Phase 2:} Active labeling loop --- run pipeline on real trap images,
@@ -575,7 +574,8 @@ confirmed real crops. RF retrains in under a minute. With $\geq$500 real
 positives, fine-tune YOLOv8-small end-to-end.
 
 % ══════════════════════════════════════════════════════════════════════════════
-\subsubsection{Assumptions and Limitations}
+\subsubsection{Limitations}
+Given gthe scope of the project, the PoC has several limitations which are outlined below.
 
 \textbf{Synthetic evaluation only.}
 The 85\,\%/77\,\% figures are on synthetic test images. Real-world performance
@@ -663,7 +663,7 @@ In production, the detection pipeline sits behind a lightweight REST API. Field
 operators upload a trap photograph; the API returns a count, bounding boxes,
 per-detection confidence scores, and a structured JSON payload for ingestion
 into a monitoring database. A web dashboard presents results by trap site and
-date. Figure~\ref{fig:prodarch} shows the full data flow.
+date. Figure~\ref{fig:prodarch} shows the data flow.
 
 \begin{figure}[H]
 \centering
@@ -750,7 +750,7 @@ closing the loop.}
 \subsection{Component descriptions}
 
 \textbf{Ingestion service.}
-A thin stateless HTTP service (FastAPI or similar) that validates image uploads,
+A thin stateless HTTP service that validates image uploads,
 attaches metadata (trap ID, GPS, timestamp), writes the raw file to object
 storage (S3/GCS), and pushes a job reference to a message queue. No ML
 dependencies; independently scalable.
@@ -787,7 +787,7 @@ exports to ONNX, and (6)~deploys to the detection worker.
 
 \subsection{Feedback loop dynamics}
 
-The loop has a self-improving character. As more images are processed, more
+The present loop has a self-improving character. As more images are processed, more
 uncertain candidates accumulate; confirmed labels produce a better model; a
 better model is more decisive, producing fewer uncertain candidates per image.
 The loop converges toward a stable operating point where expert review effort
